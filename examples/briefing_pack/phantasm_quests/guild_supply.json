@@ -1,0 +1,19 @@
+{
+  "questId": "guild_supply",
+  "title": "外置公会补给",
+  "description": "这是一条来自外置内容包的任务日志条目。",
+  "objectiveLines": [
+    "打开任务日志确认该条目可见。",
+    "完成 FTB 前置后检查商店报价状态变化。"
+  ],
+  "trackerTitle": "前往外置补给点",
+  "marker": {
+    "label": "外置补给点",
+    "dimension": "minecraft:overworld",
+    "x": 20.0,
+    "y": 64.0,
+    "z": 20.0
+  },
+  "ftbQuestId": "1B766784FBBE7D51",
+  "requiredQuestId": ""
+}

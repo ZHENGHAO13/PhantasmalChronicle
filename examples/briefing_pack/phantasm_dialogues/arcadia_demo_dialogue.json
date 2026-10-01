@@ -1,0 +1,95 @@
+{
+  "id": "arcadia_demo_dialogue",
+  "defaultNpc": {
+    "mode": "literal",
+    "value": "外置引导员"
+  },
+  "startNodeId": "root",
+  "nodes": [
+    {
+      "nodeId": "root",
+      "presentation": "briefing",
+      "text": {
+        "mode": "literal",
+        "value": "测试文本"
+      },
+      "choices": [
+        {
+          "choiceId": "accept_guild_access",
+          "text": {
+            "mode": "literal",
+            "value": "接受补给许可"
+          },
+          "conditions": [
+            {
+              "condition": "phantasmbriefing:quest_not_started",
+              "questId": "arcadia_demo_quest"
+            }
+          ],
+          "actions": [
+            {
+              "type": "start_quest",
+              "questId": "arcadia_demo_quest"
+            }
+          ],
+          "nextNodeId": "wallet_shop"
+        },
+        {
+          "choiceId": "continue_wallet_shop",
+          "text": {
+            "mode": "literal",
+            "value": "前往公会军需处"
+          },
+          "conditions": [
+            {
+              "condition": "phantasmbriefing:quest_accepted",
+              "questId": "arcadia_demo_quest"
+            }
+          ],
+          "nextNodeId": "wallet_shop"
+        },
+        {
+          "choiceId": "leave",
+          "text": {
+            "mode": "literal",
+            "value": "先离开"
+          },
+          "actions": [
+            {
+              "type": "close"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "nodeId": "wallet_shop",
+      "presentation": "briefing",
+      "text": {
+        "mode": "literal",
+        "value": "测试文本"
+      },
+      "conditions": [
+        {
+          "condition": "phantasmbriefing:has_flag",
+          "flag": "guild_access"
+        }
+      ],
+      "choices": [
+        {
+          "choiceId": "open_wallet_shop",
+          "text": {
+            "mode": "literal",
+            "value": "打开钱包商店"
+          },
+          "actions": [
+            {
+              "type": "open_shop",
+              "shopId": "guild_supply_token_shop"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

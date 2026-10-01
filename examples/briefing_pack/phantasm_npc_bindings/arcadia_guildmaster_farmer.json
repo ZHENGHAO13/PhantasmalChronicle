@@ -1,0 +1,9 @@
+{
+  "bindingId": "arcadia_guildmaster_farmer",
+  "entityType": "minecraft:villager",
+  "profession": "minecraft:farmer",
+  "customName": "公会长",
+  "questNodeId": "arcadia_intro",
+  "questId": "arcadia_demo_quest",
+  "prerequisiteLockedText": "现在还不到时候。先完成前面的委托，再来找我。"
+}

@@ -1,0 +1,20 @@
+{
+  "questId": "arcadia_demo_quest",
+  "title": "外置引导委托",
+  "description": "这是一条来自外置内容包的本模组任务状态演示任务。",
+  "objectiveLines": [
+    "通过对话接取任务。",
+    "确认外置内容包也能驱动 quest_accepted 条件。"
+  ],
+  "repeatable": false,
+  "initialPhaseId": "accepted",
+  "unlockConditions": [
+    {
+      "condition": "phantasmbriefing:always"
+    }
+  ],
+  "flagsToSetOnAccept": [
+    "guild_access"
+  ],
+  "trackerTitle": "接受外置引导委托"
+}

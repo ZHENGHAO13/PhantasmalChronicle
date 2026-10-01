@@ -1,0 +1,164 @@
+{
+  "tradeId": "phantasmbriefing:guild_supply_trade",
+  "displayName": {
+    "mode": "literal",
+    "value": "公会补给交易"
+  },
+  "description": {
+    "mode": "literal",
+    "value": "外置内容包中的独立 trades 示例。"
+  },
+  "openCondition": {
+    "condition": "phantasmbriefing:always"
+  },
+  "categories": [
+    {
+      "categoryId": "supplies",
+      "displayName": {
+        "mode": "literal",
+        "value": "基础补给"
+      },
+      "sortOrder": 0
+    }
+  ],
+  "entries": {
+    "apple_bundle": {
+      "entryId": "apple_bundle",
+      "displayName": {
+        "mode": "translate",
+        "key": "item.minecraft.apple"
+      },
+      "category": "supplies",
+      "sortOrder": 0,
+      "costs": [
+        {
+          "type": "item",
+          "itemId": "minecraft:emerald",
+          "count": 1
+        }
+      ],
+      "rewards": [
+        {
+          "type": "item",
+          "itemId": "minecraft:apple",
+          "count": 3
+        }
+      ]
+    },
+    "bread_bundle": {
+      "entryId": "bread_bundle",
+      "displayName": {
+        "mode": "translate",
+        "key": "item.minecraft.bread"
+      },
+      "category": "supplies",
+      "sortOrder": 1,
+      "costs": [
+        {
+          "type": "item",
+          "itemId": "minecraft:emerald",
+          "count": 1
+        }
+      ],
+      "rewards": [
+        {
+          "type": "item",
+          "itemId": "minecraft:bread",
+          "count": 4
+        }
+      ]
+    },
+    "torch_bundle": {
+      "entryId": "torch_bundle",
+      "displayName": {
+        "mode": "translate",
+        "key": "block.minecraft.torch"
+      },
+      "category": "supplies",
+      "sortOrder": 2,
+      "costs": [
+        {
+          "type": "item",
+          "itemId": "minecraft:emerald",
+          "count": 1
+        }
+      ],
+      "rewards": [
+        {
+          "type": "item",
+          "itemId": "minecraft:torch",
+          "count": 8
+        }
+      ]
+    },
+    "arrow_bundle": {
+      "entryId": "arrow_bundle",
+      "displayName": {
+        "mode": "translate",
+        "key": "item.minecraft.arrow"
+      },
+      "category": "supplies",
+      "sortOrder": 3,
+      "costs": [
+        {
+          "type": "item",
+          "itemId": "minecraft:emerald",
+          "count": 1
+        }
+      ],
+      "rewards": [
+        {
+          "type": "item",
+          "itemId": "minecraft:arrow",
+          "count": 10
+        }
+      ]
+    },
+    "beef_bundle": {
+      "entryId": "beef_bundle",
+      "displayName": {
+        "mode": "translate",
+        "key": "item.minecraft.cooked_beef"
+      },
+      "category": "supplies",
+      "sortOrder": 4,
+      "costs": [
+        {
+          "type": "item",
+          "itemId": "minecraft:emerald",
+          "count": 2
+        }
+      ],
+      "rewards": [
+        {
+          "type": "item",
+          "itemId": "minecraft:cooked_beef",
+          "count": 3
+        }
+      ]
+    },
+    "pickaxe_bundle": {
+      "entryId": "pickaxe_bundle",
+      "displayName": {
+        "mode": "translate",
+        "key": "item.minecraft.iron_pickaxe"
+      },
+      "category": "supplies",
+      "sortOrder": 5,
+      "costs": [
+        {
+          "type": "item",
+          "itemId": "minecraft:emerald",
+          "count": 4
+        }
+      ],
+      "rewards": [
+        {
+          "type": "item",
+          "itemId": "minecraft:iron_pickaxe",
+          "count": 1
+        }
+      ]
+    }
+  }
+}

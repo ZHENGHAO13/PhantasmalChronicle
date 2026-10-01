@@ -1,0 +1,231 @@
+buildscript {
+    repositories {
+        maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
+    }
+    dependencies {
+        classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
+    }
+}
+
+plugins {
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+}
+
+apply plugin: 'org.spongepowered.mixin'
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = mod_id
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
+
+minecraft {
+    mappings channel: mapping_channel, version: mapping_version
+    copyIdeResources = true
+
+    runs {
+        configureEach {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                "${mod_id}" {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        client {
+            property 'forge.enabledGameTestNamespaces', mod_id
+        }
+
+        server {
+            property 'forge.enabledGameTestNamespaces', mod_id
+            args '--nogui'
+        }
+
+        gameTestServer {
+            property 'forge.enabledGameTestNamespaces', mod_id
+        }
+
+        data {
+            workingDirectory project.file('run-data')
+            args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+        }
+    }
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+repositories {
+    maven { url = 'https://maven.ftb.dev/releases' }
+    maven { url = 'https://maven.architectury.dev/' }
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+    compileOnly fg.deobf('dev.architectury:architectury-forge:9.2.14')
+    compileOnly fg.deobf('dev.ftb.mods:ftb-library-forge:2001.2.12')
+    compileOnly fg.deobf('dev.ftb.mods:ftb-teams-forge:2001.3.2')
+    compileOnly fg.deobf('dev.ftb.mods:ftb-quests-forge:2001.4.22')
+}
+
+mixin {
+    add sourceSets.main, 'phantasmbriefing.refmap.json'
+    config 'phantasmbriefing.mixins.json'
+}
+
+tasks.named('processResources', ProcessResources).configure {
+    var replaceProperties = [
+            minecraft_version: minecraft_version, minecraft_version_range: minecraft_version_range,
+            forge_version: forge_version, forge_version_range: forge_version_range,
+            loader_version_range: loader_version_range,
+            mod_id: mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
+            mod_authors: mod_authors, mod_description: mod_description,
+    ]
+    inputs.properties replaceProperties
+
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+        expand replaceProperties + [project: project]
+    }
+}
+
+tasks.named('jar', Jar).configure {
+    manifest {
+        attributes([
+                'Specification-Title'     : mod_id,
+                'Specification-Vendor'    : mod_authors,
+                'Specification-Version'   : '1',
+                'Implementation-Title'    : project.name,
+                'Implementation-Version'  : project.jar.archiveVersion,
+                'Implementation-Vendor'   : mod_authors,
+                'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+                'MixinConfigs'            : 'phantasmbriefing.mixins.json'
+        ])
+    }
+
+    finalizedBy 'reobfJar'
+}
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            artifact jar
+        }
+    }
+    repositories {
+        maven {
+            url "file://${project.projectDir}/mcmodsrepo"
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+// Release guard: the dialogue voice feature spans Java classes plus bundled sound assets.
+// A build must fail instead of producing a JAR that silently contains the older voice implementation.
+tasks.register('verifyPackagedDialogueVoices') {
+    dependsOn 'reobfJar'
+
+    doLast {
+        File jarFile = tasks.named('jar').get().archiveFile.get().asFile
+        if (!jarFile.isFile()) {
+            throw new GradleException("Packaged mod JAR was not found: ${jarFile}")
+        }
+
+        Set<String> entries = [] as Set
+        zipTree(jarFile).visit { details ->
+            if (!details.directory) {
+                entries.add(details.relativePath.pathString)
+            }
+        }
+
+        List<String> requiredEntries = [
+                'assets/phantasmbriefing/sounds.json',
+                'assets/phantasmbriefing/sounds/dialogue_text_tick.ogg',
+                'assets/phantasmbriefing/sounds/dialogue_villager.ogg',
+                'com/phantasm/briefing/dialogue/sound/DialogueVoiceDefinition.class',
+                'com/phantasm/briefing/dialogue/sound/DialogueVoiceRegistry.class',
+                'com/phantasm/briefing/service/NpcDialogueVoiceService.class',
+                'com/phantasm/briefing/event/EditorHotReloadEvents.class'
+        ]
+        List<String> missingEntries = requiredEntries.findAll { !entries.contains(it) }
+        if (!missingEntries.isEmpty()) {
+            throw new GradleException(
+                    'Dialogue voice packaging verification failed. Missing JAR entries: ' + missingEntries.join(', ')
+            )
+        }
+
+        def soundJsonFile = zipTree(jarFile).matching { include 'assets/phantasmbriefing/sounds.json' }.singleFile
+        def soundJson = new groovy.json.JsonSlurper().parse(soundJsonFile)
+        Map<String, String> requiredSoundFiles = [
+                'dialogue_text_tick': 'phantasmbriefing:dialogue_text_tick',
+                'dialogue_villager' : 'phantasmbriefing:dialogue_villager'
+        ]
+        List<String> missingSoundEvents = requiredSoundFiles.keySet().findAll { !soundJson.containsKey(it) }
+        if (!missingSoundEvents.isEmpty()) {
+            throw new GradleException(
+                    'Dialogue voice packaging verification failed. Missing sounds.json events: ' + missingSoundEvents.join(', ')
+            )
+        }
+
+        requiredSoundFiles.each { eventId, expectedFileId ->
+            def eventDefinition = soundJson[eventId]
+            def soundEntries = eventDefinition instanceof Map ? eventDefinition.sounds : null
+            boolean mapsExpectedFile = soundEntries instanceof List && soundEntries.any { entry ->
+                if (entry instanceof String) {
+                    return entry == expectedFileId
+                }
+                if (entry instanceof Map) {
+                    return entry.name == expectedFileId && (!entry.containsKey('type') || entry.type == 'file')
+                }
+                return false
+            }
+            if (!mapsExpectedFile) {
+                throw new GradleException(
+                        "Dialogue voice packaging verification failed. sounds.json event '${eventId}' does not map to '${expectedFileId}'."
+                )
+            }
+        }
+
+        byte[] editorBridgeBytes = zipTree(jarFile)
+                .matching { include 'com/phantasm/briefing/event/EditorHotReloadEvents.class' }
+                .singleFile
+                .bytes
+        String editorBridgeConstants = new String(editorBridgeBytes, java.nio.charset.StandardCharsets.ISO_8859_1)
+        if (!editorBridgeConstants.contains('/phantasmbriefing/preview-dialogue-voice')) {
+            throw new GradleException(
+                    'Dialogue voice packaging verification failed. The packaged editor bridge does not contain the preview endpoint.'
+            )
+        }
+
+        logger.lifecycle("Verified dialogue voice resources and preview bridge in ${jarFile.name}")
+    }
+}
+
+tasks.named('build').configure {
+    finalizedBy 'verifyPackagedDialogueVoices'
+}
+
+// Use this task when creating the mod that will be copied into a modpack.
+// It guarantees a clean rebuild before the packaging verification above runs.
+tasks.register('releaseMod') {
+    dependsOn 'clean', 'build'
+}
+
+tasks.named('build').configure {
+    mustRunAfter 'clean'
+}
+

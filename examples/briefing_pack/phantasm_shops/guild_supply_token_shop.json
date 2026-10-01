@@ -1,0 +1,49 @@
+{
+  "shopId": "guild_supply_token_shop",
+  "title": "外置公会军需处",
+  "walletId": "guild_supply_token",
+  "offers": [
+    {
+      "result": {
+        "item": "minecraft:bread",
+        "count": 5
+      },
+      "walletCost": 1
+    },
+    {
+      "result": {
+        "item": "minecraft:golden_apple",
+        "count": 1
+      },
+      "walletCost": 8
+    },
+    {
+      "result": {
+        "item": "minecraft:arrow",
+        "count": 12
+      },
+      "walletCost": 1
+    },
+    {
+      "result": {
+        "item": "minecraft:cooked_beef",
+        "count": 3
+      },
+      "walletCost": 2
+    },
+    {
+      "result": {
+        "item": "minecraft:iron_pickaxe",
+        "count": 1
+      },
+      "walletCost": 4
+    },
+    {
+      "result": {
+        "item": "minecraft:torch",
+        "count": 16
+      },
+      "walletCost": 1
+    }
+  ]
+}

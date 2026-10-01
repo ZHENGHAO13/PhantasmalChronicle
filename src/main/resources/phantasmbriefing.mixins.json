@@ -1,0 +1,13 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "com.phantasm.briefing.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "phantasmbriefing.refmap.json",
+  "mixins": [
+    "compat.explorerscompass.ExplorersCompassItemMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

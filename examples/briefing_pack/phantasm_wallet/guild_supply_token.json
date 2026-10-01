@@ -1,0 +1,12 @@
+{
+  "currencyId": "guild_supply_token",
+  "itemId": "minecraft:emerald",
+  "displayName": {
+    "mode": "literal",
+    "value": "外置公会补给券"
+  },
+  "sortOrder": 0,
+  "itemIds": [
+    "minecraft:emerald"
+  ]
+}

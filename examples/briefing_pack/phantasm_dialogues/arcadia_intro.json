@@ -1,0 +1,34 @@
+{
+  "nodeId": "arcadia_intro",
+  "title": "阿卡迪亚外置简报",
+  "presentation": "briefing",
+  "lines": [
+    "这是来自 briefing_pack 的外置覆盖文本。",
+    "你现在可以不重打模组 jar，直接在 config 中迭代剧情内容。"
+  ],
+  "triggerVFX": false,
+  "ftbQuestIdToComplete": "",
+  "nextNodeId": "",
+  "requiredQuestId": "",
+  "options": [
+    {
+      "optionId": "accept_briefing",
+      "label": "进入下一段演出",
+      "actions": [
+        {
+          "type": "open_node",
+          "targetId": "arcadia_memory_echo"
+        }
+      ]
+    },
+    {
+      "optionId": "close_briefing",
+      "label": "稍后再来",
+      "actions": [
+        {
+          "type": "close_dialogue"
+        }
+      ]
+    }
+  ]
+}

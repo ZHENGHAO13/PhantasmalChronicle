@@ -1,0 +1,27 @@
+{
+  "bindingId": "my_story:archivist_elai",
+  "entityType": "minecraft:villager",
+  "profession": "minecraft:librarian",
+  "customName": "档案管理员伊莱",
+  "questNodeId": "arcadia_intro::root",
+  "questId": "arcadia_demo_quest",
+  "prerequisiteLockedText": "档案尚未开放。完成前置调查后再来找我。",
+  "spawns": [
+    {
+      "ruleId": "archive_spawn",
+      "structureId": "minecraft:stronghold",
+      "dimension": "minecraft:overworld",
+      "anchor": "bottom_center",
+      "offset": [
+        0,
+        1,
+        0
+      ],
+      "snapToSurface": false,
+      "yaw": 180,
+      "noAi": false,
+      "nameVisible": true,
+      "villagerLevel": 1
+    }
+  ]
+}

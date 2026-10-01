@@ -1,0 +1,44 @@
+{
+  "shopId": "guild_supply_shop",
+  "title": "外置公会补给",
+  "offers": [
+    {
+      "costA": {
+        "item": "minecraft:emerald",
+        "count": 1
+      },
+      "result": {
+        "item": "minecraft:bread",
+        "count": 3
+      }
+    },
+    {
+      "costA": {
+        "item": "minecraft:emerald",
+        "count": 4
+      },
+      "costB": {
+        "item": "minecraft:stick",
+        "count": 2
+      },
+      "result": {
+        "item": "minecraft:stone_sword",
+        "count": 1
+      },
+      "requiredQuestId": "1B766784FBBE7D51",
+      "hideUntilUnlocked": false
+    },
+    {
+      "costA": {
+        "item": "minecraft:emerald",
+        "count": 8
+      },
+      "result": {
+        "item": "minecraft:golden_apple",
+        "count": 1
+      },
+      "requiredQuestId": "42DD352208BA5519",
+      "hideUntilUnlocked": true
+    }
+  ]
+}

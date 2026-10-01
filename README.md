@@ -6,7 +6,7 @@
 
 [简体中文](#简体中文) · [English](#english)
 
-Minecraft **1.20.1** · Forge **47.4.10** · Java **17** · **Alpha**
+Minecraft **1.20.1** · Forge **47.4.10** · Java **17** · **Alpha** · [GPL-3.0-only](LICENSE)
 
 ## 简体中文
 
@@ -140,7 +140,9 @@ sh ./gradlew runClient
 
 构建缓存、游戏运行目录、临时依赖和重复备份已通过 `.gitignore` 排除。
 
-项目当前在 `gradle.properties` 中声明 **All Rights Reserved**。第三方代码与素材按各自声明保留许可信息，详见 [Third-party notices](src/main/resources/META-INF/PHANTASM_THIRD_PARTY_NOTICES.md)。
+除另有声明的第三方代码与素材外，本项目采用 **GNU 通用公共许可证第 3 版（GPL-3.0-only，仅第 3 版）**。完整条款见 [LICENSE](LICENSE)，构建时许可证全文会随模组资源一并打包。
+
+第三方组件保留各自许可：基于 Touhou Little Maid 的对话气泡代码保留 MIT 许可声明，`maid_type2.png` 素材仍适用 CC BY-NC-SA 4.0，不因本项目的许可证变更而改为 GPL。详见 [Third-party notices](src/main/resources/META-INF/PHANTASM_THIRD_PARTY_NOTICES.md)。
 
 ---
 
@@ -276,4 +278,6 @@ When reporting a problem, include the mod version or commit, reproduction steps,
 
 Build caches, game runtime directories, temporary dependencies, and duplicate backups are excluded through `.gitignore`.
 
-The project currently declares **All Rights Reserved** in `gradle.properties`. Third-party code and assets retain their individual license notices; see [Third-party notices](src/main/resources/META-INF/PHANTASM_THIRD_PARTY_NOTICES.md).
+Except for third-party code and assets with separate notices, this project is licensed under the **GNU General Public License, version 3 only (GPL-3.0-only)**. See [LICENSE](LICENSE) for the full terms. The license text is included with the mod resources during the build.
+
+Third-party components retain their respective licenses: the dialogue-bubble code based on Touhou Little Maid retains its MIT notice, and the `maid_type2.png` asset remains under CC BY-NC-SA 4.0. This project's license change does not relicense that asset under the GPL. See [Third-party notices](src/main/resources/META-INF/PHANTASM_THIRD_PARTY_NOTICES.md).

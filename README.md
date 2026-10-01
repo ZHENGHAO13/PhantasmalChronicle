@@ -10,7 +10,7 @@ Minecraft **1.20.1** · Forge **47.4.10** · Java **17** · **Alpha** · [GPL-3.
 
 ## 简体中文
 
-PhantasmalChronicle 是一个面向 Minecraft 整合包与剧情内容创作者的项目，包含 **PhantasmBriefing 模组**和 **Phantasm Maker 网页编辑器**。通过外置 JSON 内容包，把任务进度、NPC 对话、探索目标、旅者手册和商店交易连接起来，让剧情内容可以独立于模组代码迭代。
+PhantasmalChronicle 是一个面向 Minecraft 整合包与剧情内容创作者的项目，提供 **PhantasmBriefing 模组**。通过外置 JSON 内容包，把任务进度、NPC 对话、探索目标、旅者手册和商店交易连接起来，让剧情内容可以独立于模组代码迭代。
 
 仓库名称为 `PhantasmalChronicle`，游戏内模组名称为 `PhantasmBriefing`，模组 ID 为 `phantasmbriefing`。
 
@@ -22,7 +22,7 @@ PhantasmalChronicle 是一个面向 Minecraft 整合包与剧情内容创作者�
 - **NPC 与对话：** 分支选项、逐字显示、世界内对话气泡；通过对话接取任务、推进目标、设置旗标、发放物品或打开商店。可将现有实体绑定为任务 NPC，并配置结构内生成规则。
 - **旅者手册：** 以章节与页面组织说明和剧情内容，关联任务解锁与阅读目标。
 - **钱包与交易：** 配置物品货币、钱包商店和独立交易。默认余额来自玩家持有的对应物品；另有 Lightman's Currency 兼容实现。
-- **外置内容与编辑器：** 在网页中编写任务、对话、NPC 绑定、钱包、商店和交易，校验后写入内容包；本机运行游戏时可触发热加载。
+- **外置内容与热加载：** 通过 JSON 编写任务、对话、NPC 绑定、钱包、商店和交易，使用重载命令加载修改；运行时也保留了本机编辑器热加载接口。
 
 以上描述对应源码中的功能模块；当前构建和运行验证状态见下文。
 
@@ -34,7 +34,6 @@ PhantasmalChronicle 是一个面向 Minecraft 整合包与剧情内容创作者�
 | 模组加载器 | Forge 47.4.10 |
 | Java | JDK 17 |
 | Gradle | 使用仓库自带的 Wrapper，版本 8.8 |
-| 编辑器 | 本地 HTML 页面；目录读写建议使用支持该功能的 Chrome / Edge |
 
 源码包含以下可选联动；启用相应功能时，需要另行安装兼容版本及其依赖：
 
@@ -71,16 +70,13 @@ config/phantasmbriefing/briefing_pack/
 
 也可通过数据包的 `data/<namespace>/<目录名>/` 提供 JSON。外置内容按对应定义的 ID 覆盖已加载条目。对话音效元数据与音频文件分开管理，实际声音资源需由客户端资源包提供。
 
-### 使用 Phantasm Maker
+### 编辑与重载内容
 
-1. 下载或克隆本仓库，用浏览器打开 [tools/phantasm_maker/index.html](tools/phantasm_maker/index.html) 对应的**本地文件**。它是单文件编辑器，无需安装 Node.js 或启动网页服务器。
-2. 点击“选择整合包”，选择包含 `config/` 与 `mods/` 的 Minecraft 实例根目录，并允许浏览器访问该目录。
-3. 从“新建任务 + 对话 + NPC”开始，或导入已有内容。新手模式会隐藏部分高级字段。
-4. 检查数据与引用，然后写入 `briefing_pack`。本机游戏服务器已启动时，可使用编辑器的热加载功能。
+本仓库当前不包含 Phantasm Maker 网页页面及其说明文档。可使用文本编辑器参考示例编写 JSON，将文件放入对应的 `briefing_pack` 子目录，核对 ID 与引用后执行 `/pbriefing reload` 或 `/reload`。
 
-热加载桥接仅监听本机 `127.0.0.1:38471`。编辑远程服务器内容时，需要将内容包同步到服务器，再由管理员重载；本地编辑器不会自动连接远程服务器。
+运行时保留的编辑器热加载桥接仅监听本机 `127.0.0.1:38471`。编辑远程服务器内容时，需要将内容包同步到服务器，再由管理员重载。
 
-详细操作见 [Phantasm Maker 说明](tools/phantasm_maker/README.md)。开发约定见 [开发工作流](可视化网页编辑器/PhantasmalChronicle_开发工作流.md)。
+开发约定见 [开发工作流](可视化网页编辑器/PhantasmalChronicle_开发工作流.md)。
 
 ### 常用管理命令
 
@@ -121,8 +117,8 @@ sh ./gradlew runClient
 
 - 在首次上传版本 `bc8409c` 上执行 `build` 时，Java 编译报告 6 处错误，涉及旧教程界面对 `TUTORIAL`、`tutorialPages()`、`tutorialAccessible()` 及已缺失运行时方法的引用。需要完成教程与手册代码的衔接后，才能验证后续构建步骤。
 - `build.gradle` 的音效打包校验要求 `sounds.json`、`dialogue_text_tick.ogg` 和 `dialogue_villager.ogg`，但当前受版本控制的资源中尚未包含这些文件。打包规则与资源交付方式仍需统一。
-- 编辑器、示例和运行时正在迭代，部分旧字段或示例引用可能不一致。新增内容应以当前 Java 数据解析代码为准。
-- 网页编辑器基础检查 `node tools/phantasm_maker/editor_smoke_test.js` 在首次上传前通过；这不代表模组完整构建或游戏内验证通过。执行该检查需要 Node.js。
+- 示例和运行时正在迭代，部分旧字段或示例引用可能不一致。新增内容应以当前 Java 数据解析代码为准。
+- `tools/phantasm_maker/editor_smoke_test.js` 为保留的历史编辑器检查脚本；当前缺少其依赖的 `index.html`，无法直接运行。
 
 提交问题时，请附上模组版本或提交号、复现步骤、相关日志，以及最小可复现的内容包。可在 [Issues](https://github.com/ZHENGHAO13/PhantasmalChronicle/issues) 中反馈。
 
@@ -134,7 +130,7 @@ sh ./gradlew runClient
 | `src/main/resources/` | 模组元数据、语言文件与资源 |
 | `src/test/`、`tests/` | Java 与编辑器检查代码 |
 | `examples/briefing_pack/` | 外置内容示例 |
-| `tools/phantasm_maker/` | 网页编辑器、说明与基础检查 |
+| `tools/phantasm_maker/` | 历史编辑器检查脚本（不含网页页面） |
 | `tools/verify_*.py` | 功能回归检查脚本，部分对应历史实现 |
 | `gradle/`、`gradlew*` | Gradle Wrapper |
 
@@ -148,7 +144,7 @@ sh ./gradlew runClient
 
 ## English
 
-PhantasmalChronicle is a project for Minecraft modpack and story creators. It includes the **PhantasmBriefing mod** and the **Phantasm Maker browser editor**, connecting quest progression, NPC dialogue, exploration objectives, traveler manuals, and trading through external JSON content packs. Story content can be developed independently of the mod's Java code.
+PhantasmalChronicle is a project for Minecraft modpack and story creators. It provides the **PhantasmBriefing mod**, connecting quest progression, NPC dialogue, exploration objectives, traveler manuals, and trading through external JSON content packs. Story content can be developed independently of the mod's Java code.
 
 The repository is named `PhantasmalChronicle`; the in-game mod name is `PhantasmBriefing`, and its mod ID is `phantasmbriefing`.
 
@@ -160,7 +156,7 @@ The repository is named `PhantasmalChronicle`; the in-game mod name is `Phantasm
 - **NPCs and dialogue:** Branching choices, typewriter text, and in-world dialogue bubbles. Dialogue actions can start quests, advance objectives, set flags, grant items, or open shops. Existing entities can be bound to quest dialogue, with configurable structure-based spawning.
 - **Traveler manuals:** Organize instructions and story content into sections and pages, with quest-linked unlocks and reading objectives.
 - **Wallets and trading:** Define item currencies, wallet shops, and standalone trades. By default, balances come from matching items held by the player; the source also includes Lightman's Currency integration.
-- **External content and editing:** Create quests, dialogue, NPC bindings, wallets, shops, and trades in a browser, validate them, and write a content pack. A locally running game can receive a reload request from the editor.
+- **External content and reloading:** Define quests, dialogue, NPC bindings, wallets, shops, and trades in JSON, then load changes with a reload command. The runtime also retains a local editor reload interface.
 
 These descriptions reflect modules present in the source. Build and runtime validation limits are listed below.
 
@@ -172,7 +168,6 @@ These descriptions reflect modules present in the source. Build and runtime vali
 | Mod loader | Forge 47.4.10 |
 | Java | JDK 17 |
 | Gradle | Bundled Wrapper, version 8.8 |
-| Editor | Local HTML file; use Chrome / Edge with directory-access support for direct file writing |
 
 The source includes these optional integrations. Install compatible versions and their dependencies separately when using the corresponding features:
 
@@ -209,16 +204,13 @@ config/phantasmbriefing/briefing_pack/
 
 JSON can also be supplied through a datapack under `data/<namespace>/<directory>/`. External definitions override loaded entries by their respective IDs. Dialogue sound metadata is separate from audio files; actual sound resources must be provided through client resource packs.
 
-### Using Phantasm Maker
+### Editing and reloading content
 
-1. Download or clone the repository and open the **local copy** of [tools/phantasm_maker/index.html](tools/phantasm_maker/index.html) in your browser. The editor is a single HTML file; using it requires neither Node.js nor a web server.
-2. Choose your Minecraft instance directory containing `config/` and `mods/`, and grant the browser access to that directory.
-3. Start with the quest + dialogue + NPC creation flow, or import existing content. Beginner mode hides some advanced fields.
-4. Validate the data and references, then write the content to `briefing_pack`. Use the reload feature when a game server is running on the same machine.
+This repository no longer includes the Phantasm Maker web page or its guide. Use a text editor and the examples to create JSON files, place them in the appropriate `briefing_pack` subdirectories, check IDs and references, and run `/pbriefing reload` or `/reload`.
 
-The reload bridge listens only on `127.0.0.1:38471`. For a remote server, transfer the content pack to that server and have an administrator reload it; the local editor does not automatically connect to remote servers.
+The runtime's editor reload bridge still listens only on `127.0.0.1:38471`. For a remote server, transfer the content pack to that server and have an administrator reload it.
 
-See the [Phantasm Maker guide](tools/phantasm_maker/README.md) for detailed instructions and the [development workflow](可视化网页编辑器/PhantasmalChronicle_开发工作流.md) for development conventions. Both documents are currently in Chinese.
+See the [development workflow](可视化网页编辑器/PhantasmalChronicle_开发工作流.md) for development conventions, currently in Chinese.
 
 ### Common administrative commands
 
@@ -259,8 +251,8 @@ The first build requires network access to download Gradle, Forge, and dependenc
 
 - Running `build` on the initial upload, `bc8409c`, reported six Java compilation errors. Older tutorial screens and packets still reference `TUTORIAL`, `tutorialPages()`, `tutorialAccessible()`, and missing runtime methods. The tutorial-to-manual transition needs to be completed before later build stages can be verified.
 - The sound packaging checks in `build.gradle` require `sounds.json`, `dialogue_text_tick.ogg`, and `dialogue_villager.ogg`, which are absent from the currently tracked resources. Packaging requirements and resource delivery still need to be reconciled.
-- The editor, examples, and runtime are evolving; some older fields or example references may be inconsistent. Use the current Java data parsers as the source of truth for new content.
-- The editor smoke check, `node tools/phantasm_maker/editor_smoke_test.js`, passed before the initial upload. This does not establish a successful full mod build or in-game validation. Node.js is required to run this check.
+- The examples and runtime are evolving; some older fields or example references may be inconsistent. Use the current Java data parsers as the source of truth for new content.
+- `tools/phantasm_maker/editor_smoke_test.js` is retained as a historical editor check. Its required `index.html` is no longer present, so it cannot currently be run directly.
 
 When reporting a problem, include the mod version or commit, reproduction steps, relevant logs, and a minimal content pack. Report problems through [Issues](https://github.com/ZHENGHAO13/PhantasmalChronicle/issues).
 
@@ -272,7 +264,7 @@ When reporting a problem, include the mod version or commit, reproduction steps,
 | `src/main/resources/` | Mod metadata, translations, and assets |
 | `src/test/`, `tests/` | Java and editor checks |
 | `examples/briefing_pack/` | Example external content |
-| `tools/phantasm_maker/` | Browser editor, guide, and smoke check |
+| `tools/phantasm_maker/` | Historical editor check script; no web page included |
 | `tools/verify_*.py` | Regression checks, some targeting historical implementations |
 | `gradle/`, `gradlew*` | Gradle Wrapper |
 

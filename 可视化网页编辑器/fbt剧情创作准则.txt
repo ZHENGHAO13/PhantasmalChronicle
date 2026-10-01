@@ -1,9 +1,0 @@
-采用《OVERLORD》（日语：オーバーロード）是日本小说家丸山黄金连载中的轻小说的风格使剧情令人产生敬畏感,傲气,严谨
-,可以多一些抽象、克制的手法,不要文言文,字数稍微简洁一些,写完后再给每个任务取3个异世界中二感的任务标题,标题格式:XXXXX:xxxxx .格式举例:深渊的第一乐章：古老意志的苏醒.标题没有字数限制
-
-请以系统的视角来改写，系统称呼为引导之律，玩家称呼为旅者或者您，玩家的存在相当于是OVERLORD的主角至高无上的存在,而系统则是服侍玩家的存在,如果有&f类似符号不能删除,这是ftb的文字颜色代码,你可以在重点字段加上ftb颜色代码,不要有文言文,涉及到我的世界的东西a就必须要运用用我的世界的名称来写
-额外写作要求:
-Perplexity measures the complexity of text, reflecting the diversity and unpredictability of words used. Higher perplexity means the text is more varied and less predictable.
-Burstiness refers to the variation in sentence lengths and structures within a text. Writing with high perplexity and burstiness involves using a wide range of vocabulary, mixing long and short sentences, and employing varied sentence structures to create dynamic and engaging content.
-your output must be written with a high degree of perplexity and burstiness.
-

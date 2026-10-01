@@ -80,7 +80,7 @@ config/phantasmbriefing/briefing_pack/
 
 热加载桥接仅监听本机 `127.0.0.1:38471`。编辑远程服务器内容时，需要将内容包同步到服务器，再由管理员重载；本地编辑器不会自动连接远程服务器。
 
-详细操作见 [Phantasm Maker 说明](tools/phantasm_maker/README.md)。`可视化网页编辑器/` 中还保留了另一份编辑器页面与创作资料；不同页面的功能覆盖有差异，请核对导出格式与当前运行时代码。
+详细操作见 [Phantasm Maker 说明](tools/phantasm_maker/README.md)。开发约定见 [开发工作流](可视化网页编辑器/PhantasmalChronicle_开发工作流.md)。
 
 ### 常用管理命令
 
@@ -216,7 +216,7 @@ JSON can also be supplied through a datapack under `data/<namespace>/<directory>
 
 The reload bridge listens only on `127.0.0.1:38471`. For a remote server, transfer the content pack to that server and have an administrator reload it; the local editor does not automatically connect to remote servers.
 
-See the [Phantasm Maker guide](tools/phantasm_maker/README.md) for detailed instructions, currently in Chinese. `可视化网页编辑器/` also contains another editor page and authoring notes. Feature coverage differs between pages, so check exported data against the current runtime.
+See the [Phantasm Maker guide](tools/phantasm_maker/README.md) for detailed instructions and the [development workflow](可视化网页编辑器/PhantasmalChronicle_开发工作流.md) for development conventions. Both documents are currently in Chinese.
 
 ### Common administrative commands
 

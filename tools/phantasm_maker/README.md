@@ -4,7 +4,7 @@
 
 编辑器有意保持为单个 `index.html`，便于直接双击离线使用，不依赖本地开发服务器或外部 CDN。
 
-第一次使用请先阅读：[中文快速教程](../../QUICK_START.zh-CN.md) · [English Quick Start](../../QUICK_START.en-US.md)。本文后续内容作为编辑器功能参考。
+第一次使用请先阅读：[中文项目指南](../../README.md#简体中文) · [English project guide](../../README.md#english)。本文后续内容作为编辑器功能参考。
 
 当前版本已经覆盖以下核心内容层：
 

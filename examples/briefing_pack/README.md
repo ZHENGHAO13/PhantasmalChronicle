@@ -52,5 +52,5 @@ config/phantasmbriefing/briefing_pack/
 1. 复制本示例到 `config/phantasmbriefing/briefing_pack/`
 2. 给一个农民村民命名为 `公会长`
 3. 执行 `/reload`
-4. 右键该村民
+4. 对准该村民，按默认对话键 `V`（可在 Minecraft 控制设置中修改）
 5. 观察是否直接触发 `arcadia_intro`

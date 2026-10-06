@@ -1,8 +1,7 @@
 package com.phantasm.briefing.network.packet;
 
-import com.phantasm.briefing.client.screen.WalletShopScreen;
+import com.phantasm.briefing.network.ClientPacketBridge;
 import com.phantasm.briefing.data.WalletShopOfferEntry;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
 
@@ -78,14 +77,7 @@ public record OpenWalletShopS2CPacket(
 
     public static void handle(OpenWalletShopS2CPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
         NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> Minecraft.getInstance().setScreen(new WalletShopScreen(
-                packet.shopId(),
-                packet.shopTitle(),
-                packet.shopSubtitle(),
-                packet.balanceLabel(),
-                packet.balanceIconItemId(),
-                packet.offers()
-        )));
+        context.enqueueWork(() -> ClientPacketBridge.handle(packet));
         context.setPacketHandled(true);
     }
 }

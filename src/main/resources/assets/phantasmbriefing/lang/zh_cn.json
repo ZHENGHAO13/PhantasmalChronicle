@@ -48,5 +48,12 @@
   "item.phantasmbriefing.static_quest_npc_spawn_egg": "剧情任务 NPC 刷怪蛋",
   "hud.phantasmbriefing.manual_read_prompt": "§e按 J 打开任务日志阅读旅者手册",
   "journal.phantasmbriefing.manual_read_open": "§6点击阅读旅者手册",
-  "journal.phantasmbriefing.manual_read_locked": "§f尚未进行，暂不可查看"
+  "journal.phantasmbriefing.manual_read_locked": "§f尚未进行，暂不可查看",
+  "msg.phantasmbriefing.item_delivery_missing": "§c交付失败：需要 %s §c× %s，当前只有 %s。",
+  "msg.phantasmbriefing.shop_open_failed": "§c[PB] 无法打开商店或交易：%s",
+  "config.phantasmbriefing.tracker.enabled": "任务追踪总开关",
+  "config.phantasmbriefing.tracker.enabled.description": "关闭后隐藏任务追踪面板和全部方向提示。",
+  "hud.phantasmbriefing.waiting_structure": "等待定位结构：%s",
+  "config.phantasmbriefing.tracker.show_objective_tracking_text": "显示追踪文字",
+  "config.phantasmbriefing.tracker.show_objective_tracking_text.description": "开启后显示阶段目标填写的追踪显示文字；默认关闭。"
 }

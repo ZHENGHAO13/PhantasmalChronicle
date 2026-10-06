@@ -12,6 +12,7 @@ public enum DialogueActionType {
     OPEN_NODE,
     OPEN_SHOP,
     GIVE_ITEM,
+    DELIVER_ITEM,
     SET_FLAG,
     CLOSE_DIALOGUE,
     COMPLETE_FTB_QUEST,

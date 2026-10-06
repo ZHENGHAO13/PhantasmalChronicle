@@ -231,6 +231,7 @@ public final class NpcStructureSpawnService {
 
         List<BlockPos> spawnCandidates = NpcSpawnPlacementService.resolveSpawnCandidates(level, start, rule, instanceId);
         if (spawnCandidates.isEmpty()) {
+            logNoSpawnCandidates(level, instanceId, structureId, binding, rule, start);
             return false;
         }
 
@@ -273,6 +274,31 @@ public final class NpcStructureSpawnService {
             logSpawnFailure(level, instanceId, binding, lastCollisionPos, lastCollision, attemptedCandidates);
         }
         return false;
+    }
+
+    private static void logNoSpawnCandidates(
+            ServerLevel level,
+            String instanceId,
+            String structureId,
+            NpcBindingSpec binding,
+            NpcStructureSpawnSpec rule,
+            StructureStart start
+    ) {
+        long now = level.getGameTime();
+        Long previous = LAST_SPAWN_FAILURE_LOG.put(instanceId, now);
+        if (previous != null && now - previous < SPAWN_FAILURE_LOG_COOLDOWN_TICKS) {
+            return;
+        }
+        BoundingBox box = start.getBoundingBox();
+        PhantasmBriefing.LOGGER.warn(
+                "[PhantasmBriefing] No NPC spawn candidate found for binding '{}' in structure '{}' "
+                        + "box=[{}, {}, {} -> {}, {}, {}], snapToSurface={}",
+                binding.bindingId(),
+                structureId,
+                box.minX(), box.minY(), box.minZ(),
+                box.maxX(), box.maxY(), box.maxZ(),
+                rule.snapToSurface()
+        );
     }
 
     private static NpcSpawnService.SpawnResult spawnEntity(

@@ -1,6 +1,6 @@
 package com.phantasm.briefing.network.packet;
 
-import com.phantasm.briefing.client.QuestTrackerClientState;
+import com.phantasm.briefing.network.ClientPacketBridge;
 import com.phantasm.briefing.data.QuestHintTarget;
 import com.phantasm.briefing.data.QuestHintType;
 import net.minecraft.network.FriendlyByteBuf;
@@ -36,7 +36,7 @@ public record SyncQuestHintTargetS2CPacket(
 
     public static void handle(SyncQuestHintTargetS2CPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
         NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> QuestTrackerClientState.setHints(packet.targets()));
+        context.enqueueWork(() -> ClientPacketBridge.handle(packet));
         context.setPacketHandled(true);
     }
 }

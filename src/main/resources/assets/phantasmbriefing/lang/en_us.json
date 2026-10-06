@@ -48,5 +48,12 @@
   "item.phantasmbriefing.static_quest_npc_spawn_egg": "Quest NPC Spawn Egg",
   "hud.phantasmbriefing.manual_read_prompt": "§ePress J to open the quest journal and read the handbook",
   "journal.phantasmbriefing.manual_read_open": "§6Click to read the handbook",
-  "journal.phantasmbriefing.manual_read_locked": "§fNot available until this phase begins"
+  "journal.phantasmbriefing.manual_read_locked": "§fNot available until this phase begins",
+  "msg.phantasmbriefing.item_delivery_missing": "§cDelivery failed: requires %s §c× %s, but only %s available.",
+  "msg.phantasmbriefing.shop_open_failed": "§c[PB] Unable to open shop or trade: %s",
+  "config.phantasmbriefing.tracker.enabled": "Quest Tracking",
+  "config.phantasmbriefing.tracker.enabled.description": "Hide the quest tracker panel and all directional hints when disabled.",
+  "hud.phantasmbriefing.waiting_structure": "Waiting to locate structure: %s",
+  "config.phantasmbriefing.tracker.show_objective_tracking_text": "Show Tracking Text",
+  "config.phantasmbriefing.tracker.show_objective_tracking_text.description": "Show tracking text configured for phase objectives. Disabled by default."
 }

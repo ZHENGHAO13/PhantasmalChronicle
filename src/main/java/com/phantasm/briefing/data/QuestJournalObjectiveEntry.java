@@ -9,6 +9,7 @@ public record QuestJournalObjectiveEntry(
         int progress,
         int requiredCount,
         boolean completed,
+        boolean active,
         boolean manualReadable,
         List<ManualReferenceSpec> manualRefs
 ) {

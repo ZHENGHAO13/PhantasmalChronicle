@@ -7,6 +7,8 @@ import com.phantasm.briefing.data.QuestPhaseSpec;
 import com.phantasm.briefing.data.QuestSpec;
 import com.phantasm.briefing.data.QuestRuntimeStatus;
 import com.phantasm.briefing.data.QuestTrackerEntry;
+import com.phantasm.briefing.data.QuestTrackerObjectiveEntry;
+import com.phantasm.briefing.data.QuestTrackerPhaseEntry;
 import com.phantasm.briefing.data.ManualReadPromptState;
 import com.phantasm.briefing.network.ModNetwork;
 import com.phantasm.briefing.network.packet.SyncQuestTrackerS2CPacket;
@@ -73,10 +75,60 @@ public final class QuestTrackerService {
                 .map(quest -> new QuestTrackerEntry(
                         quest.questId(),
                         quest.trackerTitle().isBlank() ? quest.title() : quest.trackerTitle(),
-                        QuestRuntimeService.currentPhaseObjectiveLines(player, quest),
+                        buildTrackedPhases(player, quest),
                         resolveTrackedMarker(player, quest)
                 ));
     }
+
+    private static List<QuestTrackerPhaseEntry> buildTrackedPhases(ServerPlayer player, QuestSpec quest) {
+        List<QuestTrackerPhaseEntry> result = new ArrayList<>();
+        for (QuestPhaseSpec phase : QuestRuntimeService.activePhases(player, quest)) {
+            List<QuestTrackerObjectiveEntry> objectives = new ArrayList<>();
+            for (QuestObjectiveSpec objective : phase.objectives()) {
+                if (!BriefingConditionService.all(player, null, objective.conditions())) {
+                    continue;
+                }
+                boolean completed = BriefingPlayerData.isObjectiveCompleted(
+                        player, quest.questId(), phase.phaseId(), objective.objectiveId());
+                boolean active = !completed && QuestRuntimeService.isObjectiveActive(player, quest, objective);
+                objectives.add(new QuestTrackerObjectiveEntry(
+                        objectiveTitle(player, quest, phase, objective, completed),
+                        List.copyOf(objective.objectiveLines()),
+                        objective.usesStructureSearch() && !StructureSearchCompatService.hasResolvedMarker(player, quest, objective)
+                                ? objective.resolvedStructureLabel()
+                                : "",
+                        completed,
+                        active
+                ));
+            }
+            String phaseTitle = phase.title().isBlank() ? phase.phaseId() : phase.title();
+            result.add(new QuestTrackerPhaseEntry(
+                    phaseTitle,
+                    List.copyOf(objectives)
+            ));
+        }
+        return List.copyOf(result);
+    }
+
+    private static String objectiveTitle(
+            ServerPlayer player,
+            QuestSpec quest,
+            QuestPhaseSpec phase,
+            QuestObjectiveSpec objective,
+            boolean completed
+    ) {
+        String title = objective.title().isBlank() ? objective.objectiveId() : objective.title();
+        if (!objective.isEventDriven()) {
+            return title;
+        }
+        int progress = completed
+                ? objective.requiredCount()
+                : Math.min(objective.requiredCount(), Math.max(0,
+                BriefingPlayerData.objectiveProgress(
+                        player, quest.questId(), phase.phaseId(), objective.objectiveId())));
+        return title + " (" + progress + "/" + objective.requiredCount() + ")";
+    }
+
 
     public static void syncToClient(ServerPlayer player) {
         ModNetwork.CHANNEL.send(

@@ -1,6 +1,6 @@
 package com.phantasm.briefing.network.packet;
 
-import com.phantasm.briefing.client.DialogueTypewriterSoundPlayer;
+import com.phantasm.briefing.network.ClientPacketBridge;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
 
@@ -19,7 +19,7 @@ public record PreviewDialogueVoiceS2CPacket(String soundEventId, float volume) {
 
     public static void handle(PreviewDialogueVoiceS2CPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
         NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> DialogueTypewriterSoundPlayer.playPreview(packet.soundEventId(), packet.volume()));
+        context.enqueueWork(() -> ClientPacketBridge.handle(packet));
         context.setPacketHandled(true);
     }
 }

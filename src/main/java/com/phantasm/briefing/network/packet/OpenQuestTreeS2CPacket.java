@@ -1,11 +1,9 @@
 package com.phantasm.briefing.network.packet;
 
-import com.phantasm.briefing.client.screen.QuestTreeScreen;
+import com.phantasm.briefing.network.ClientPacketBridge;
 import com.phantasm.briefing.data.QuestTreeEdgeEntry;
 import com.phantasm.briefing.data.QuestTreeEdgeType;
 import com.phantasm.briefing.data.QuestTreeNodeEntry;
-import com.phantasm.briefing.data.QuestTreeSnapshot;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
 
@@ -57,9 +55,7 @@ public record OpenQuestTreeS2CPacket(
 
     public static void handle(OpenQuestTreeS2CPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
         NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> Minecraft.getInstance().setScreen(new QuestTreeScreen(
-                new QuestTreeSnapshot(packet.nodes(), packet.edges())
-        )));
+        context.enqueueWork(() -> ClientPacketBridge.handle(packet));
         context.setPacketHandled(true);
     }
 }

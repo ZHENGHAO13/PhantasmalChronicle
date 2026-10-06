@@ -14,7 +14,7 @@ PhantasmalChronicle 是一个面向 Minecraft 整合包与剧情内容创作者�
 
 仓库名称为 `PhantasmalChronicle`，游戏内模组名称为 `PhantasmBriefing`，模组 ID 为 `phantasmbriefing`。
 
-> **开发状态：** 当前配置版本为 `0.1.0-alpha.1`。本仓库是开发中的源码快照；当前提交存在已知构建阻塞，尚不能直接构建为可用发行版。详见[开发与已知限制](#开发与已知限制)。
+> **开发状态：** 当前版本为 `alpha-0.1.0+build.1`。这是可构建的 Alpha 源码交付，尚未完成全面的游戏内与多人联机验收。变更见 [CHANGELOG](CHANGELOG.md)，使用前请阅读[开发与已知限制](#开发与已知限制)。
 
 ### 功能概览
 
@@ -76,8 +76,6 @@ config/phantasmbriefing/briefing_pack/
 
 运行时保留的编辑器热加载桥接仅监听本机 `127.0.0.1:38471`。编辑远程服务器内容时，需要将内容包同步到服务器，再由管理员重载。
 
-开发约定见 [开发工作流](可视化网页编辑器/PhantasmalChronicle_开发工作流.md)。
-
 ### 常用管理命令
 
 以下 `/pbriefing` 命令需要权限等级 2。`<...>` 是需要替换的参数；`@s` 表示执行命令的玩家。
@@ -111,14 +109,14 @@ sh ./gradlew build
 sh ./gradlew runClient
 ```
 
-首次构建需要联网下载 Gradle、Forge 和依赖。成功构建后的 JAR 位于 `build/libs/`。`releaseMod` 任务用于清理后重建，并包含对话音效打包校验。
+首次构建需要联网下载 Gradle、Forge 和依赖。成功构建后的 JAR 位于 `build/libs/`，当前文件名为 `phantasmbriefing-alpha-0.1.0+build.1.jar`。`releaseMod` 任务用于清理后重建。构建仅依赖本仓库交付的源码、资源、构建配置以及声明的外部依赖。
 
 **当前源码快照的限制：**
 
-- 在首次上传版本 `bc8409c` 上执行 `build` 时，Java 编译报告 6 处错误，涉及旧教程界面对 `TUTORIAL`、`tutorialPages()`、`tutorialAccessible()` 及已缺失运行时方法的引用。需要完成教程与手册代码的衔接后，才能验证后续构建步骤。
-- `build.gradle` 的音效打包校验要求 `sounds.json`、`dialogue_text_tick.ogg` 和 `dialogue_villager.ogg`，但当前受版本控制的资源中尚未包含这些文件。打包规则与资源交付方式仍需统一。
+- 本次验证覆盖源码编译、资源处理与 JAR 打包，不等同于全部游戏功能和多人联机验收通过。
+- 本版本更新了任务追踪与日志的网络数据格式，协议版本为 `15`。客户端与服务器必须使用相同版本；旧版协议 `14` 不兼容。
+- 对话音效定义与音频资源需配套提供。当前仓库没有内置默认对话音频；需要声音的内容包应同时提供对应客户端资源包。
 - 示例和运行时正在迭代，部分旧字段或示例引用可能不一致。新增内容应以当前 Java 数据解析代码为准。
-- `tools/phantasm_maker/editor_smoke_test.js` 为保留的历史编辑器检查脚本；当前缺少其依赖的 `index.html`，无法直接运行。
 
 提交问题时，请附上模组版本或提交号、复现步骤、相关日志，以及最小可复现的内容包。可在 [Issues](https://github.com/ZHENGHAO13/PhantasmalChronicle/issues) 中反馈。
 
@@ -128,13 +126,11 @@ sh ./gradlew runClient
 | --- | --- |
 | `src/main/java/` | 模组源码 |
 | `src/main/resources/` | 模组元数据、语言文件与资源 |
-| `src/test/`、`tests/` | Java 与编辑器检查代码 |
 | `examples/briefing_pack/` | 外置内容示例 |
-| `tools/phantasm_maker/` | 历史编辑器检查脚本（不含网页页面） |
-| `tools/verify_*.py` | 功能回归检查脚本，部分对应历史实现 |
 | `gradle/`、`gradlew*` | Gradle Wrapper |
+| `CHANGELOG.md` | 对外版本变更说明 |
 
-构建缓存、游戏运行目录、临时依赖和重复备份已通过 `.gitignore` 排除。
+仓库保留完整功能源码、最终资源、构建入口、使用说明和许可文件。自用测试工具、内部协作记录、缓存及备份不随源码交付，构建也不依赖这些文件。
 
 除另有声明的第三方代码与素材外，本项目采用 **GNU 通用公共许可证第 3 版（GPL-3.0-only，仅第 3 版）**。完整条款见 [LICENSE](LICENSE)，构建时许可证全文会随模组资源一并打包。
 
@@ -148,7 +144,7 @@ PhantasmalChronicle is a project for Minecraft modpack and story creators. It pr
 
 The repository is named `PhantasmalChronicle`; the in-game mod name is `PhantasmBriefing`, and its mod ID is `phantasmbriefing`.
 
-> **Development status:** The configured version is `0.1.0-alpha.1`. This repository contains a development snapshot with known build blockers and cannot currently be built directly into a usable release. See [Development and known limitations](#development-and-known-limitations).
+> **Development status:** The current version is `alpha-0.1.0+build.1`. This is a buildable Alpha source distribution; comprehensive in-game and multiplayer validation is still pending. See [CHANGELOG](CHANGELOG.md) and [Development and known limitations](#development-and-known-limitations).
 
 ### Features
 
@@ -210,8 +206,6 @@ This repository no longer includes the Phantasm Maker web page or its guide. Use
 
 The runtime's editor reload bridge still listens only on `127.0.0.1:38471`. For a remote server, transfer the content pack to that server and have an administrator reload it.
 
-See the [development workflow](可视化网页编辑器/PhantasmalChronicle_开发工作流.md) for development conventions, currently in Chinese.
-
 ### Common administrative commands
 
 The following `/pbriefing` commands require permission level 2. Replace `<...>` with the appropriate ID; `@s` targets the player running the command.
@@ -245,14 +239,14 @@ sh ./gradlew build
 sh ./gradlew runClient
 ```
 
-The first build requires network access to download Gradle, Forge, and dependencies. Successful builds produce JARs in `build/libs/`. The `releaseMod` task performs a clean rebuild and includes dialogue-sound packaging checks.
+The first build requires network access to download Gradle, Forge, and dependencies. Successful builds produce JARs in `build/libs/`; the current filename is `phantasmbriefing-alpha-0.1.0+build.1.jar`. The `releaseMod` task performs a clean rebuild. Building requires only the distributed sources, resources, build configuration, and declared external dependencies.
 
 **Limitations of the current source snapshot:**
 
-- Running `build` on the initial upload, `bc8409c`, reported six Java compilation errors. Older tutorial screens and packets still reference `TUTORIAL`, `tutorialPages()`, `tutorialAccessible()`, and missing runtime methods. The tutorial-to-manual transition needs to be completed before later build stages can be verified.
-- The sound packaging checks in `build.gradle` require `sounds.json`, `dialogue_text_tick.ogg`, and `dialogue_villager.ogg`, which are absent from the currently tracked resources. Packaging requirements and resource delivery still need to be reconciled.
+- Validation covers Java compilation, resource processing, and JAR packaging; it does not establish that all gameplay or multiplayer scenarios pass.
+- Quest tracking and journal packet layouts have changed, and the protocol version is now `15`. Clients and servers must use the same version; the older protocol `14` is incompatible.
+- Dialogue sound definitions need matching audio resources. Default dialogue audio is not bundled in this repository; content requiring sound should provide a matching client resource pack.
 - The examples and runtime are evolving; some older fields or example references may be inconsistent. Use the current Java data parsers as the source of truth for new content.
-- `tools/phantasm_maker/editor_smoke_test.js` is retained as a historical editor check. Its required `index.html` is no longer present, so it cannot currently be run directly.
 
 When reporting a problem, include the mod version or commit, reproduction steps, relevant logs, and a minimal content pack. Report problems through [Issues](https://github.com/ZHENGHAO13/PhantasmalChronicle/issues).
 
@@ -262,13 +256,11 @@ When reporting a problem, include the mod version or commit, reproduction steps,
 | --- | --- |
 | `src/main/java/` | Mod source code |
 | `src/main/resources/` | Mod metadata, translations, and assets |
-| `src/test/`, `tests/` | Java and editor checks |
 | `examples/briefing_pack/` | Example external content |
-| `tools/phantasm_maker/` | Historical editor check script; no web page included |
-| `tools/verify_*.py` | Regression checks, some targeting historical implementations |
 | `gradle/`, `gradlew*` | Gradle Wrapper |
+| `CHANGELOG.md` | User-facing version notes |
 
-Build caches, game runtime directories, temporary dependencies, and duplicate backups are excluded through `.gitignore`.
+The repository contains the complete functional source, final resources, build entry points, usage documentation, and license files. Internal test tools, collaboration records, caches, and backups are not distributed or required to build the project.
 
 Except for third-party code and assets with separate notices, this project is licensed under the **GNU General Public License, version 3 only (GPL-3.0-only)**. See [LICENSE](LICENSE) for the full terms. The license text is included with the mod resources during the build.
 

@@ -79,7 +79,6 @@ public final class DialogueFlowCoordinator {
                 .filter(node -> canOpenNodeForPlayer(player, node, contextEntity));
     }
 
-
     public static boolean hasActiveSession(ServerPlayer player) {
         return player != null && ACTIVE_NODE_BY_PLAYER.containsKey(player.getUUID());
     }
@@ -390,6 +389,18 @@ public final class DialogueFlowCoordinator {
                 continue;
             }
 
+            if (action.type() == DialogueActionType.DELIVER_ITEM) {
+                if (!PlayerItemDeliveryService.deliverItem(player, action.targetId(), action.count())) {
+                    // A failed hand-in ends this interaction. Reopening sourceNodeId here would
+                    // immediately show the same option again and trap the player in a retry loop.
+                    closePlayerSession(player);
+                    QuestTrackerService.syncToClient(player);
+                    QuestEntityHintService.requestSync(player);
+                    return true;
+                }
+                continue;
+            }
+
             if (action.type() == DialogueActionType.SET_FLAG) {
                 PlayerFlagService.setFlag(player, action.targetId());
                 continue;
@@ -456,6 +467,6 @@ public final class DialogueFlowCoordinator {
         }
 
         LOGGER.warn("[PhantasmBriefing] Failed to open shop/trade '{}' for player {} on node '{}'", shopId, player.getGameProfile().getName(), sourceNodeId);
-        player.sendSystemMessage(Component.literal("[PhantasmBriefing] 无法打开商店或交易：id=" + shopId));
+        player.sendSystemMessage(Component.translatable("msg.phantasmbriefing.shop_open_failed", shopId));
     }
 }

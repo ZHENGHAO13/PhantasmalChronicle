@@ -36,11 +36,11 @@ public record DialogueAction(
             );
             case OPEN_NODE -> sanitize(GsonHelper.getAsString(json, "nodeId", ""));
             case OPEN_SHOP -> sanitize(GsonHelper.getAsString(json, "shopId", ""));
-            case GIVE_ITEM -> sanitize(GsonHelper.getAsString(json, "itemId", ""));
+            case GIVE_ITEM, DELIVER_ITEM -> sanitize(GsonHelper.getAsString(json, "itemId", ""));
             case SET_FLAG -> sanitize(GsonHelper.getAsString(json, "flagName", ""));
             case REMOVE_CONTEXT_NPC, CLOSE_DIALOGUE -> "";
         };
-        int count = type == DialogueActionType.GIVE_ITEM
+        int count = (type == DialogueActionType.GIVE_ITEM || type == DialogueActionType.DELIVER_ITEM)
                 ? Math.max(1, GsonHelper.getAsInt(json, "count", 1))
                 : 1;
 
@@ -52,6 +52,7 @@ public record DialogueAction(
                 || type == DialogueActionType.OPEN_NODE
                 || type == DialogueActionType.OPEN_SHOP
                 || type == DialogueActionType.GIVE_ITEM
+                || type == DialogueActionType.DELIVER_ITEM
                 || type == DialogueActionType.SET_FLAG) && targetId.isBlank()) {
             throw new IllegalArgumentException("Dialogue action target is blank for " + type + ": " + sourceDescription);
         }

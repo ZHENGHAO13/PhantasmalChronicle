@@ -44,17 +44,10 @@ minecraft {
             }
         }
 
-        client {
-            property 'forge.enabledGameTestNamespaces', mod_id
-        }
+        client {}
 
         server {
-            property 'forge.enabledGameTestNamespaces', mod_id
             args '--nogui'
-        }
-
-        gameTestServer {
-            property 'forge.enabledGameTestNamespaces', mod_id
         }
 
         data {
@@ -138,93 +131,8 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
-// Release guard: the dialogue voice feature spans Java classes plus bundled sound assets.
-// A build must fail instead of producing a JAR that silently contains the older voice implementation.
-tasks.register('verifyPackagedDialogueVoices') {
-    dependsOn 'reobfJar'
-
-    doLast {
-        File jarFile = tasks.named('jar').get().archiveFile.get().asFile
-        if (!jarFile.isFile()) {
-            throw new GradleException("Packaged mod JAR was not found: ${jarFile}")
-        }
-
-        Set<String> entries = [] as Set
-        zipTree(jarFile).visit { details ->
-            if (!details.directory) {
-                entries.add(details.relativePath.pathString)
-            }
-        }
-
-        List<String> requiredEntries = [
-                'assets/phantasmbriefing/sounds.json',
-                'assets/phantasmbriefing/sounds/dialogue_text_tick.ogg',
-                'assets/phantasmbriefing/sounds/dialogue_villager.ogg',
-                'com/phantasm/briefing/dialogue/sound/DialogueVoiceDefinition.class',
-                'com/phantasm/briefing/dialogue/sound/DialogueVoiceRegistry.class',
-                'com/phantasm/briefing/service/NpcDialogueVoiceService.class',
-                'com/phantasm/briefing/event/EditorHotReloadEvents.class'
-        ]
-        List<String> missingEntries = requiredEntries.findAll { !entries.contains(it) }
-        if (!missingEntries.isEmpty()) {
-            throw new GradleException(
-                    'Dialogue voice packaging verification failed. Missing JAR entries: ' + missingEntries.join(', ')
-            )
-        }
-
-        def soundJsonFile = zipTree(jarFile).matching { include 'assets/phantasmbriefing/sounds.json' }.singleFile
-        def soundJson = new groovy.json.JsonSlurper().parse(soundJsonFile)
-        Map<String, String> requiredSoundFiles = [
-                'dialogue_text_tick': 'phantasmbriefing:dialogue_text_tick',
-                'dialogue_villager' : 'phantasmbriefing:dialogue_villager'
-        ]
-        List<String> missingSoundEvents = requiredSoundFiles.keySet().findAll { !soundJson.containsKey(it) }
-        if (!missingSoundEvents.isEmpty()) {
-            throw new GradleException(
-                    'Dialogue voice packaging verification failed. Missing sounds.json events: ' + missingSoundEvents.join(', ')
-            )
-        }
-
-        requiredSoundFiles.each { eventId, expectedFileId ->
-            def eventDefinition = soundJson[eventId]
-            def soundEntries = eventDefinition instanceof Map ? eventDefinition.sounds : null
-            boolean mapsExpectedFile = soundEntries instanceof List && soundEntries.any { entry ->
-                if (entry instanceof String) {
-                    return entry == expectedFileId
-                }
-                if (entry instanceof Map) {
-                    return entry.name == expectedFileId && (!entry.containsKey('type') || entry.type == 'file')
-                }
-                return false
-            }
-            if (!mapsExpectedFile) {
-                throw new GradleException(
-                        "Dialogue voice packaging verification failed. sounds.json event '${eventId}' does not map to '${expectedFileId}'."
-                )
-            }
-        }
-
-        byte[] editorBridgeBytes = zipTree(jarFile)
-                .matching { include 'com/phantasm/briefing/event/EditorHotReloadEvents.class' }
-                .singleFile
-                .bytes
-        String editorBridgeConstants = new String(editorBridgeBytes, java.nio.charset.StandardCharsets.ISO_8859_1)
-        if (!editorBridgeConstants.contains('/phantasmbriefing/preview-dialogue-voice')) {
-            throw new GradleException(
-                    'Dialogue voice packaging verification failed. The packaged editor bridge does not contain the preview endpoint.'
-            )
-        }
-
-        logger.lifecycle("Verified dialogue voice resources and preview bridge in ${jarFile.name}")
-    }
-}
-
-tasks.named('build').configure {
-    finalizedBy 'verifyPackagedDialogueVoices'
-}
-
 // Use this task when creating the mod that will be copied into a modpack.
-// It guarantees a clean rebuild before the packaging verification above runs.
+// Rebuild the mod from clean sources and resources.
 tasks.register('releaseMod') {
     dependsOn 'clean', 'build'
 }

@@ -1,7 +1,6 @@
 package com.phantasm.briefing.network.packet;
 
-import com.phantasm.briefing.client.screen.QuestJournalScreen;
-import com.phantasm.briefing.client.ContentTextureCache;
+import com.phantasm.briefing.network.ClientPacketBridge;
 import com.phantasm.briefing.data.QuestJournalEntry;
 import com.phantasm.briefing.data.ManualSpec;
 import com.phantasm.briefing.data.ManualAutoOpenTarget;
@@ -10,7 +9,6 @@ import com.phantasm.briefing.service.QuestJournalService;
 import net.minecraft.server.level.ServerPlayer;
 import com.phantasm.briefing.data.QuestJournalObjectiveEntry;
 import com.phantasm.briefing.data.QuestJournalPhaseEntry;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
 
@@ -97,6 +95,7 @@ public record OpenQuestJournalS2CPacket(
         buffer.writeVarInt(objective.progress());
         buffer.writeVarInt(objective.requiredCount());
         buffer.writeBoolean(objective.completed());
+        buffer.writeBoolean(objective.active());
         buffer.writeBoolean(objective.manualReadable());
         ManualPacketCodec.writeRefs(buffer, objective.manualRefs());
     }
@@ -110,21 +109,14 @@ public record OpenQuestJournalS2CPacket(
                 buffer.readVarInt(),
                 buffer.readBoolean(),
                 buffer.readBoolean(),
+                buffer.readBoolean(),
                 ManualPacketCodec.readRefs(buffer)
         );
     }
 
     public static void handle(OpenQuestJournalS2CPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
         NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> {
-            Minecraft minecraft = Minecraft.getInstance();
-            QuestJournalScreen current = minecraft.screen instanceof QuestJournalScreen journal ? journal : null;
-            ContentTextureCache.clear();
-            QuestJournalScreen next = new QuestJournalScreen(packet.entries(), packet.manuals());
-            if (current != null) next.restoreStateFrom(current);
-            if (packet.autoOpenTarget() != null) next.openManualAutomatically(packet.autoOpenTarget());
-            minecraft.setScreen(next);
-        });
+        context.enqueueWork(() -> ClientPacketBridge.handle(packet));
         context.setPacketHandled(true);
     }
 }

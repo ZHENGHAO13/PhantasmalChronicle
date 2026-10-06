@@ -1,12 +1,15 @@
 package com.phantasm.briefing.network.packet;
 
-import com.phantasm.briefing.client.QuestTrackerClientState;
+import com.phantasm.briefing.network.ClientPacketBridge;
+import com.phantasm.briefing.data.ManualReadPromptState;
 import com.phantasm.briefing.data.QuestMarkerSpec;
 import com.phantasm.briefing.data.QuestTrackerEntry;
-import com.phantasm.briefing.data.ManualReadPromptState;
+import com.phantasm.briefing.data.QuestTrackerObjectiveEntry;
+import com.phantasm.briefing.data.QuestTrackerPhaseEntry;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -20,7 +23,18 @@ public record SyncQuestTrackerS2CPacket(
         if (packet.entry() != null) {
             buffer.writeUtf(packet.entry().questId());
             buffer.writeUtf(packet.entry().title());
-            buffer.writeCollection(packet.entry().objectiveLines(), FriendlyByteBuf::writeUtf);
+            buffer.writeVarInt(packet.entry().phases().size());
+            for (QuestTrackerPhaseEntry phase : packet.entry().phases()) {
+                buffer.writeUtf(phase.title());
+                buffer.writeVarInt(phase.objectives().size());
+                for (QuestTrackerObjectiveEntry objective : phase.objectives()) {
+                    buffer.writeUtf(objective.title());
+                    buffer.writeCollection(objective.trackingLines(), FriendlyByteBuf::writeUtf);
+                    buffer.writeUtf(objective.waitingStructureLabel());
+                    buffer.writeBoolean(objective.completed());
+                    buffer.writeBoolean(objective.active());
+                }
+            }
             buffer.writeBoolean(packet.entry().marker() != null);
             if (packet.entry().marker() != null) {
                 QuestMarkerSpec marker = packet.entry().marker();
@@ -44,7 +58,26 @@ public record SyncQuestTrackerS2CPacket(
         if (buffer.readBoolean()) {
             String questId = buffer.readUtf();
             String title = buffer.readUtf();
-            List<String> objectiveLines = buffer.readList(FriendlyByteBuf::readUtf);
+            int phaseCount = buffer.readVarInt();
+            List<QuestTrackerPhaseEntry> phases = new ArrayList<>(phaseCount);
+            for (int phaseIndex = 0; phaseIndex < phaseCount; phaseIndex++) {
+                String phaseTitle = buffer.readUtf();
+                int objectiveCount = buffer.readVarInt();
+                List<QuestTrackerObjectiveEntry> objectives = new ArrayList<>(objectiveCount);
+                for (int objectiveIndex = 0; objectiveIndex < objectiveCount; objectiveIndex++) {
+                    objectives.add(new QuestTrackerObjectiveEntry(
+                            buffer.readUtf(),
+                            buffer.readList(FriendlyByteBuf::readUtf),
+                            buffer.readUtf(),
+                            buffer.readBoolean(),
+                            buffer.readBoolean()
+                    ));
+                }
+                phases.add(new QuestTrackerPhaseEntry(
+                        phaseTitle,
+                        List.copyOf(objectives)
+                ));
+            }
             QuestMarkerSpec marker = null;
             if (buffer.readBoolean()) {
                 marker = new QuestMarkerSpec(
@@ -55,7 +88,12 @@ public record SyncQuestTrackerS2CPacket(
                         buffer.readDouble()
                 );
             }
-            entry = new QuestTrackerEntry(questId, title, objectiveLines, marker);
+            entry = new QuestTrackerEntry(
+                    questId,
+                    title,
+                    List.copyOf(phases),
+                    marker
+            );
         }
         ManualReadPromptState manualReadPrompt = null;
         if (buffer.readBoolean()) {
@@ -66,10 +104,7 @@ public record SyncQuestTrackerS2CPacket(
 
     public static void handle(SyncQuestTrackerS2CPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
         NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> {
-            QuestTrackerClientState.setTrackedEntry(packet.entry());
-            QuestTrackerClientState.setManualReadPrompt(packet.manualReadPrompt());
-        });
+        context.enqueueWork(() -> ClientPacketBridge.handle(packet));
         context.setPacketHandled(true);
     }
 }

@@ -1,11 +1,8 @@
 package com.phantasm.briefing.network.packet;
 
-import com.phantasm.briefing.client.ContentTextureCache;
-import com.phantasm.briefing.client.screen.QuestJournalScreen;
-import com.phantasm.briefing.client.screen.QuestTreeScreen;
+import com.phantasm.briefing.network.ClientPacketBridge;
 import com.phantasm.briefing.data.QuestTreeSnapshot;
 import com.phantasm.briefing.service.QuestTreeService;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
@@ -42,24 +39,7 @@ public record RefreshQuestContentS2CPacket(
 
     public static void handle(RefreshQuestContentS2CPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
         NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> {
-            Minecraft minecraft = Minecraft.getInstance();
-            if (minecraft.screen instanceof QuestJournalScreen current) {
-                ContentTextureCache.clear();
-                QuestJournalScreen next = new QuestJournalScreen(
-                        packet.journal().entries(),
-                        packet.journal().manuals()
-                );
-                next.restoreStateFrom(current);
-                minecraft.setScreen(next);
-                return;
-            }
-            if (minecraft.screen instanceof QuestTreeScreen) {
-                minecraft.setScreen(new QuestTreeScreen(
-                        new QuestTreeSnapshot(packet.tree().nodes(), packet.tree().edges())
-                ));
-            }
-        });
+        context.enqueueWork(() -> ClientPacketBridge.handle(packet));
         context.setPacketHandled(true);
     }
 }

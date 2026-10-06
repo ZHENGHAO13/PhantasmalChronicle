@@ -1,6 +1,6 @@
 package com.phantasm.briefing.network.packet;
 
-import com.phantasm.briefing.client.ClientDialogueSession;
+import com.phantasm.briefing.network.ClientPacketBridge;
 import com.phantasm.briefing.data.DialogueContentEntry;
 import com.phantasm.briefing.data.DialogueContentType;
 import com.phantasm.briefing.data.DialogueOption;
@@ -157,7 +157,7 @@ public record OpenDialogueNodeS2CPacket(
 
     public static void handle(OpenDialogueNodeS2CPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
         NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> ClientDialogueSession.getInstance().openNode(packet));
+        context.enqueueWork(() -> ClientPacketBridge.handle(packet));
         context.setPacketHandled(true);
     }
 

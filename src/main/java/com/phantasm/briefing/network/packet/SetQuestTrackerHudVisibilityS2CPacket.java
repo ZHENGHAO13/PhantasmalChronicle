@@ -1,6 +1,6 @@
 package com.phantasm.briefing.network.packet;
 
-import com.phantasm.briefing.client.QuestTrackerClientState;
+import com.phantasm.briefing.network.ClientPacketBridge;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
 
@@ -19,7 +19,7 @@ public record SetQuestTrackerHudVisibilityS2CPacket(
 
     public static void handle(SetQuestTrackerHudVisibilityS2CPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
         NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> QuestTrackerClientState.setTrackerHudEnabled(packet.enabled()));
+        context.enqueueWork(() -> ClientPacketBridge.handle(packet));
         context.setPacketHandled(true);
     }
 }

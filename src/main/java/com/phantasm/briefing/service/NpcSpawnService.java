@@ -12,6 +12,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.npc.VillagerData;
 import net.minecraft.world.entity.npc.VillagerProfession;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -159,9 +160,19 @@ public final class NpcSpawnService {
             return "未知村民职业：" + binding.profession();
         }
 
+        int configuredLevel = Math.max(1, Math.min(5, villagerLevel));
         villager.setVillagerData(villager.getVillagerData()
                 .setProfession(profession)
-                .setLevel(Math.max(1, Math.min(5, villagerLevel))));
+                .setLevel(configuredLevel));
+
+        // A configured story NPC profession is author-owned. Giving it the minimum XP for
+        // its configured level (and at least 1 XP for level 1) makes vanilla treat the
+        // profession as established, so losing a workstation does not clear it. This runs
+        // only when the NPC is spawned or its binding is explicitly reapplied; no tick scan.
+        int lockedProfessionXp = Math.max(1, VillagerData.getMinXpPerLevel(configuredLevel));
+        if (villager.getVillagerXp() < lockedProfessionXp) {
+            villager.setVillagerXp(lockedProfessionXp);
+        }
         return null;
     }
 

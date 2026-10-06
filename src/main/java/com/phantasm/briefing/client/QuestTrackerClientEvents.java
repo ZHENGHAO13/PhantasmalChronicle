@@ -8,6 +8,8 @@ import com.phantasm.briefing.data.QuestHintTarget;
 import com.phantasm.briefing.data.QuestHintType;
 import com.phantasm.briefing.data.QuestMarkerSpec;
 import com.phantasm.briefing.data.QuestTrackerEntry;
+import com.phantasm.briefing.data.QuestTrackerObjectiveEntry;
+import com.phantasm.briefing.data.QuestTrackerPhaseEntry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -52,9 +54,7 @@ public final class QuestTrackerClientEvents {
 
         QuestTrackerEntry trackedEntry = QuestTrackerClientState.getTrackedEntry();
         if (QuestTrackerClientState.isTrackerHudEnabled() && trackedEntry != null) {
-            if (PhantasmBriefingClientConfig.questTrackerPanelEnabled()) {
-                renderTrackerPanel(guiGraphics, minecraft, trackedEntry, event.getWindow().getGuiScaledWidth());
-            }
+            renderTrackerPanel(guiGraphics, minecraft, trackedEntry, event.getWindow().getGuiScaledWidth());
             if (PhantasmBriefingClientConfig.worldMarkerEnabled()) {
                 renderMarker(guiGraphics, minecraft, trackedEntry.marker(), event.getWindow().getGuiScaledWidth(), event.getWindow().getGuiScaledHeight());
             }
@@ -78,42 +78,176 @@ public final class QuestTrackerClientEvents {
             int screenWidth
     ) {
         Font font = minecraft.font;
-        int top = 10;
-        int width = 170;
-        int left = PhantasmBriefingClientConfig.questTrackerAnchorRight() ? screenWidth - width - 10 : 10;
-        int contentWidth = width - 16;
-        String trackerTitle = trackedEntry.title();
-        List<FormattedCharSequence> titleLines = font.split(Component.literal(trackerTitle), contentWidth);
-        List<FormattedCharSequence> objectiveLines = new ArrayList<>();
-        if (trackedEntry.objectiveLines().isEmpty()) {
-            objectiveLines.addAll(font.split(Component.translatable("hud.phantasmbriefing.no_objectives"), contentWidth));
-        } else {
-            int objectiveCount = PhantasmBriefingClientConfig.questTrackerShowAllObjectives()
-                    ? trackedEntry.objectiveLines().size()
-                    : 1;
-            for (int i = 0; i < objectiveCount; i++) {
-                String prefix = objectiveCount > 1 ? "• " : "";
-                objectiveLines.addAll(font.split(Component.literal(prefix + trackedEntry.objectiveLines().get(i)), contentWidth));
+        int top = 8;
+        int width = 150;
+        int horizontalPadding = 6;
+        int contentWidth = width - (horizontalPadding * 2);
+        int left = PhantasmBriefingClientConfig.questTrackerAnchorRight() ? screenWidth - width - 8 : 8;
+        boolean showTrackingText = PhantasmBriefingClientConfig.questTrackerShowObjectiveTrackingText();
+        List<TrackerRenderLine> lines = new ArrayList<>();
+
+        addTrackerLines(
+                lines,
+                font,
+                Component.literal(trackedEntry.title()),
+                contentWidth,
+                DarkFantasyTheme.TEXT_TITLE,
+                0,
+                0
+        );
+
+        boolean hasObjectives = false;
+        for (QuestTrackerPhaseEntry phase : trackedEntry.phases()) {
+            if (!phase.objectives().isEmpty()) {
+                hasObjectives = true;
+            }
+            addTrackerLines(
+                    lines,
+                    font,
+                    Component.literal(phase.title()),
+                    contentWidth,
+                    DarkFantasyTheme.TEXT_PRIMARY,
+                    0,
+                    1
+            );
+
+            for (QuestTrackerObjectiveEntry objective : phase.objectives()) {
+                int objectiveColor = objective.completed()
+                        ? DarkFantasyTheme.TEXT_COMPLETED
+                        : objective.active() ? DarkFantasyTheme.TEXT_SECONDARY : DarkFantasyTheme.TEXT_MUTED;
+                addObjectiveTrackerLines(
+                        lines,
+                        font,
+                        objective.completed() ? "✓" : "○",
+                        objective.title(),
+                        contentWidth,
+                        objectiveColor,
+                        0
+                );
+
+                if (!showTrackingText) {
+                    continue;
+                }
+                int trackingColor = objective.active()
+                        ? DarkFantasyTheme.TEXT_MUTED
+                        : objectiveColor;
+                for (String objectiveTrackingLine : objective.trackingLines()) {
+                    addTrackerLines(
+                            lines,
+                            font,
+                            Component.literal(objectiveTrackingLine),
+                            contentWidth,
+                            trackingColor,
+                            8,
+                            0
+                    );
+                }
+                if (!objective.waitingStructureLabel().isBlank()) {
+                    addTrackerLines(
+                            lines,
+                            font,
+                            Component.translatable(
+                                    "hud.phantasmbriefing.waiting_structure",
+                                    objective.waitingStructureLabel()
+                            ),
+                            contentWidth,
+                            trackingColor,
+                            8,
+                            0
+                    );
+                }
             }
         }
+
+        if (!hasObjectives) {
+            addTrackerLines(
+                    lines,
+                    font,
+                    Component.translatable("hud.phantasmbriefing.no_objectives"),
+                    contentWidth,
+                    DarkFantasyTheme.TEXT_MUTED,
+                    0,
+                    2
+            );
+        }
+
         int lineHeight = font.lineHeight;
-        int height = 8
-                + (titleLines.size() * lineHeight)
-                + 4
-                + (objectiveLines.size() * lineHeight)
-                + 8;
+        int height = 4 + lines.stream().mapToInt(line -> lineHeight + line.gapBefore()).sum() + 4;
         guiGraphics.fill(left, top, left + width, top + height, DarkFantasyTheme.TRACKER_BACKGROUND);
         guiGraphics.fill(left, top, left + width, top + 1, DarkFantasyTheme.TRACKER_TOP_EDGE);
-        guiGraphics.fill(left, top, left + 2, top + height, DarkFantasyTheme.TRACKER_ACCENT);
-        int lineY = top + 7;
-        for (FormattedCharSequence titleLine : titleLines) {
-            guiGraphics.drawString(font, titleLine, left + 8, lineY, DarkFantasyTheme.TEXT_TITLE, true);
+        guiGraphics.fill(left, top, left + 1, top + height, DarkFantasyTheme.TRACKER_ACCENT);
+
+        int lineY = top + 4;
+        for (TrackerRenderLine line : lines) {
+            lineY += line.gapBefore();
+            int lineX = left + horizontalPadding + line.indent();
+            if (!line.prefix().isEmpty()) {
+                guiGraphics.drawString(font, line.prefix(), lineX, lineY, line.color(), true);
+            }
+            guiGraphics.drawString(
+                    font,
+                    line.text(),
+                    lineX + line.textOffset(),
+                    lineY,
+                    line.color(),
+                    true
+            );
             lineY += lineHeight;
         }
-        lineY += 4;
-        for (FormattedCharSequence objectiveLine : objectiveLines) {
-            guiGraphics.drawString(font, objectiveLine, left + 8, lineY, DarkFantasyTheme.TEXT_SECONDARY, true);
-            lineY += lineHeight;
+    }
+
+    private static void addTrackerLines(
+            List<TrackerRenderLine> target,
+            Font font,
+            Component text,
+            int contentWidth,
+            int color,
+            int indent,
+            int gapBefore
+    ) {
+        int wrappedWidth = Math.max(24, contentWidth - indent);
+        List<FormattedCharSequence> wrapped = font.split(text, wrappedWidth);
+        if (wrapped.isEmpty()) {
+            return;
+        }
+        for (int index = 0; index < wrapped.size(); index++) {
+            target.add(new TrackerRenderLine(
+                    wrapped.get(index),
+                    "",
+                    color,
+                    indent,
+                    0,
+                    index == 0 ? gapBefore : 0
+            ));
+        }
+    }
+
+    private static void addObjectiveTrackerLines(
+            List<TrackerRenderLine> target,
+            Font font,
+            String prefix,
+            String title,
+            int contentWidth,
+            int color,
+            int gapBefore
+    ) {
+        String renderedPrefix = prefix + " ";
+        int prefixWidth = font.width(renderedPrefix);
+        int wrappedWidth = Math.max(24, contentWidth - prefixWidth);
+        List<FormattedCharSequence> wrapped = font.split(Component.literal(title), wrappedWidth);
+        if (wrapped.isEmpty()) {
+            return;
+        }
+        for (int index = 0; index < wrapped.size(); index++) {
+            boolean firstLine = index == 0;
+            target.add(new TrackerRenderLine(
+                    wrapped.get(index),
+                    firstLine ? renderedPrefix : "",
+                    color,
+                    firstLine ? 0 : prefixWidth,
+                    firstLine ? prefixWidth : 0,
+                    firstLine ? gapBefore : 0
+            ));
         }
     }
 
@@ -319,6 +453,16 @@ public final class QuestTrackerClientEvents {
     }
 
     private record PlacedHint(int x, int y) {
+    }
+
+    private record TrackerRenderLine(
+            FormattedCharSequence text,
+            String prefix,
+            int color,
+            int indent,
+            int textOffset,
+            int gapBefore
+    ) {
     }
 
 }

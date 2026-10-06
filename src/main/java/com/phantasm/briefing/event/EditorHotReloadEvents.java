@@ -88,7 +88,7 @@ public final class EditorHotReloadEvents {
             this.bridge.createContext(RELOAD_PATH, this::handleReloadRequest);
             this.bridge.createContext(RESOURCES_PATH, this::handleResourcesRequest);
             this.bridge.createContext(PREVIEW_DIALOGUE_VOICE_PATH, this::handlePreviewDialogueVoiceRequest);
-            this.bridgeExecutor = Executors.newSingleThreadExecutor(runnable -> {
+            this.bridgeExecutor = Executors.newFixedThreadPool(4, runnable -> {
                 Thread thread = new Thread(runnable, "Phantasm-Maker-Hot-Reload");
                 thread.setDaemon(true);
                 return thread;
@@ -166,9 +166,25 @@ public final class EditorHotReloadEvents {
                 return;
             }
 
-            server.execute(() -> requestReload(server, saveRequest));
-            String mode = saveRequest.reloadRequired() ? "reload_requested" : "reconcile_requested";
-            sendJson(exchange, 202, "{\"accepted\":true,\"message\":\"" + mode + "\"}");
+            CompletableFuture<Boolean> completion = new CompletableFuture<>();
+            PendingEditorSave acknowledgedRequest = saveRequest.withAcknowledgement(completion);
+            server.execute(() -> requestReload(server, acknowledgedRequest));
+            try {
+                boolean completed = completion.get(8L, TimeUnit.SECONDS);
+                if (completed) {
+                    String mode = saveRequest.reloadRequired() ? "reload_completed" : "reconcile_completed";
+                    sendJson(exchange, 200, "{\"accepted\":true,\"completed\":true,\"message\":\"" + mode + "\"}");
+                } else {
+                    sendJson(exchange, 500, "{\"accepted\":false,\"completed\":false,\"message\":\"reload_failed\"}");
+                }
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                sendJson(exchange, 503, "{\"accepted\":false,\"completed\":false,\"message\":\"reload_interrupted\"}");
+            } catch (ExecutionException exception) {
+                sendJson(exchange, 500, "{\"accepted\":false,\"completed\":false,\"message\":\"reload_failed\"}");
+            } catch (TimeoutException exception) {
+                sendJson(exchange, 504, "{\"accepted\":false,\"completed\":false,\"message\":\"reload_timeout\"}");
+            }
         }
     }
 
@@ -362,6 +378,7 @@ public final class EditorHotReloadEvents {
             if (throwable != null) {
                 LOGGER.error("[PhantasmBriefing] Editor hot reload failed", throwable);
                 notifyOperators(server, Component.translatable("msg.phantasmbriefing.editor_reload_failed"));
+                completeAcknowledgements(saveRequest, false);
             } else {
                 EditorReloadReconciliationService.Result reconciliation =
                         EditorReloadReconciliationService.reconcile(
@@ -407,6 +424,7 @@ public final class EditorHotReloadEvents {
                             )
                     );
                 }
+                completeAcknowledgements(saveRequest, true);
             }
 
             if (this.queuedSave != null && this.activeServer == server && server.isRunning()) {
@@ -485,7 +503,7 @@ public final class EditorHotReloadEvents {
         EditorReloadReconciliationService.SaveManifest manifest = parseSaveManifest(root);
         Set<String> changedDomains = readSupportedDomains(root, "changedKinds");
         boolean reloadRequired = root.get("reloadRequired").getAsBoolean();
-        return new PendingEditorSave(manifest, changedDomains, reloadRequired);
+        return new PendingEditorSave(manifest, changedDomains, reloadRequired, List.of());
     }
 
     private static EditorReloadReconciliationService.SaveManifest parseSaveManifest(JsonObject root) {
@@ -515,23 +533,39 @@ public final class EditorHotReloadEvents {
         return Set.copyOf(domains);
     }
 
+    private static void completeAcknowledgements(PendingEditorSave saveRequest, boolean success) {
+        for (CompletableFuture<Boolean> acknowledgement : saveRequest.acknowledgements()) {
+            acknowledgement.complete(success);
+        }
+    }
+
     private record PendingEditorSave(
             EditorReloadReconciliationService.SaveManifest manifest,
             Set<String> changedDomains,
-            boolean reloadRequired
+            boolean reloadRequired,
+            List<CompletableFuture<Boolean>> acknowledgements
     ) {
         private PendingEditorSave {
             changedDomains = changedDomains == null ? Set.of() : Set.copyOf(changedDomains);
+            acknowledgements = acknowledgements == null ? List.of() : List.copyOf(acknowledgements);
         }
 
+        private PendingEditorSave withAcknowledgement(CompletableFuture<Boolean> acknowledgement) {
+            List<CompletableFuture<Boolean>> merged = new java.util.ArrayList<>(this.acknowledgements);
+            merged.add(acknowledgement);
+            return new PendingEditorSave(this.manifest, this.changedDomains, this.reloadRequired, List.copyOf(merged));
+        }
 
         private PendingEditorSave merge(PendingEditorSave newer) {
             LinkedHashSet<String> mergedDomains = new LinkedHashSet<>(this.changedDomains);
             mergedDomains.addAll(newer.changedDomains);
+            List<CompletableFuture<Boolean>> mergedAcknowledgements = new java.util.ArrayList<>(this.acknowledgements);
+            mergedAcknowledgements.addAll(newer.acknowledgements);
             return new PendingEditorSave(
                     newer.manifest != null ? newer.manifest : this.manifest,
                     Set.copyOf(mergedDomains),
-                    this.reloadRequired || newer.reloadRequired
+                    this.reloadRequired || newer.reloadRequired,
+                    List.copyOf(mergedAcknowledgements)
             );
         }
     }

@@ -8,11 +8,13 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.npc.Villager;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 public final class BriefingConditionService {
     public static final String CURRENT_NAMESPACE = "phantasmbriefing:";
+    private static final ThreadLocal<Set<String>> ACTIVE_OBJECTIVE_GUARD = ThreadLocal.withInitial(HashSet::new);
 
     private BriefingConditionService() {
     }
@@ -59,6 +61,12 @@ public final class BriefingConditionService {
                 String questId = readString(condition, "questId", "");
                 String phaseId = readString(condition, "phaseId", "");
                 yield BriefingPlayerData.isPhaseCompleted(player, questId, phaseId);
+            }
+            case CURRENT_NAMESPACE + "pb_quest_objective_active" -> {
+                String questId = readString(condition, "questId", "");
+                String phaseId = readString(condition, "phaseId", "");
+                String objectiveId = readString(condition, "objectiveId", "");
+                yield testObjectiveActive(player, questId, phaseId, objectiveId);
             }
             case CURRENT_NAMESPACE + "pb_quest_objective_completed" -> {
                 String questId = readString(condition, "questId", "");
@@ -113,6 +121,26 @@ public final class BriefingConditionService {
             return CURRENT_NAMESPACE + "always";
         }
         return type.trim().toLowerCase(java.util.Locale.ROOT).replace('-', '_');
+    }
+
+
+    private static boolean testObjectiveActive(ServerPlayer player, String questId, String phaseId, String objectiveId) {
+        if (player == null || questId.isBlank() || phaseId.isBlank() || objectiveId.isBlank()) {
+            return false;
+        }
+        String key = player.getUUID() + "|" + questId + "|" + phaseId + "|" + objectiveId;
+        Set<String> guard = ACTIVE_OBJECTIVE_GUARD.get();
+        if (!guard.add(key)) {
+            return false;
+        }
+        try {
+            return QuestRuntimeService.isObjectiveActive(player, questId, phaseId, objectiveId);
+        } finally {
+            guard.remove(key);
+            if (guard.isEmpty()) {
+                ACTIVE_OBJECTIVE_GUARD.remove();
+            }
+        }
     }
 
     private static boolean any(ServerPlayer player, Entity entity, List<JsonObject> conditions) {

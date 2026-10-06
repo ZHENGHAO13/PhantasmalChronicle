@@ -47,3 +47,11 @@ Thumbs.db
 /tools/phantasm_maker/PhantasmMaker-*.html
 /可视化网页编辑器/新建文件夹/
 /remove_demo_resources.bat
+
+# Local-only collaboration records, checks, authoring tools and archives
+/.local/
+/tools/
+/tests/
+/src/test/
+/可视化网页编辑器/
+AGENTS.md

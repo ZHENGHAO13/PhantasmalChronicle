@@ -7,6 +7,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
@@ -28,6 +29,7 @@ final class NpcSpawnPlacementService {
     private static final int SURFACE_SEARCH_RADIUS = 32;
     private static final int MAX_SURFACE_CANDIDATES = 32;
     private static final int SURFACE_VERTICAL_PROBE = 8;
+    private static final int MAX_AIR_CANDIDATES = 64;
 
     private NpcSpawnPlacementService() {
     }
@@ -57,7 +59,7 @@ final class NpcSpawnPlacementService {
         BlockPos configuredPosition = base.offset(rule.offsetX(), rule.offsetY(), rule.offsetZ());
         configuredPosition = applyDeterministicSpread(configuredPosition, rule.spreadRadius(), instanceId);
         if (!rule.snapToSurface()) {
-            return List.of(configuredPosition);
+            return findStructureAirPositions(level, box, configuredPosition);
         }
         return findSafeSurfacePositions(level, configuredPosition, rule.offsetY());
     }
@@ -115,6 +117,150 @@ final class NpcSpawnPlacementService {
             dx = random.nextBoolean() ? 1 : -1;
         }
         return origin.offset(dx, 0, dz);
+    }
+
+    /**
+     * Finds free air positions inside the matched structure when surface snapping is disabled.
+     *
+     * <p>Disabling surface snapping does not mean "use one exact XYZ or fail". The configured
+     * anchor/offset/spread only supplies the preferred point. We search the currently loaded part
+     * of the structure bounding box for collision-free air and let {@link NpcSpawnService} perform
+     * the final entity-sized collision check. This keeps flying NPCs such as allays independent
+     * from floor/support requirements while never moving them outside the matched structure.</p>
+     */
+    private static List<BlockPos> findStructureAirPositions(
+            ServerLevel level,
+            BoundingBox structureBox,
+            BlockPos configuredPosition
+    ) {
+        int minY = Math.max(structureBox.minY(), level.getMinBuildHeight() + 1);
+        int maxY = Math.min(structureBox.maxY(), level.getMaxBuildHeight() - 2);
+        if (minY > maxY) {
+            return List.of();
+        }
+
+        int preferredX = clamp(configuredPosition.getX(), structureBox.minX(), structureBox.maxX());
+        int preferredY = clamp(configuredPosition.getY(), minY, maxY);
+        int preferredZ = clamp(configuredPosition.getZ(), structureBox.minZ(), structureBox.maxZ());
+
+        int minChunkX = structureBox.minX() >> 4;
+        int maxChunkX = structureBox.maxX() >> 4;
+        int minChunkZ = structureBox.minZ() >> 4;
+        int maxChunkZ = structureBox.maxZ() >> 4;
+        List<ChunkPos> loadedChunks = new ArrayList<>();
+        for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+            for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+                if (level.getChunkSource().getChunkNow(chunkX, chunkZ) != null) {
+                    loadedChunks.add(new ChunkPos(chunkX, chunkZ));
+                }
+            }
+        }
+
+        loadedChunks.sort(Comparator
+                .comparingLong((ChunkPos chunk) -> chunkDistanceScore(chunk, preferredX, preferredZ))
+                .thenComparingInt(chunk -> chunk.x)
+                .thenComparingInt(chunk -> chunk.z));
+
+        List<BlockPos> candidates = new ArrayList<>();
+        for (ChunkPos chunk : loadedChunks) {
+            int minX = Math.max(structureBox.minX(), chunk.getMinBlockX());
+            int maxX = Math.min(structureBox.maxX(), chunk.getMaxBlockX());
+            int minZ = Math.max(structureBox.minZ(), chunk.getMinBlockZ());
+            int maxZ = Math.min(structureBox.maxZ(), chunk.getMaxBlockZ());
+
+            List<BlockPos> columns = new ArrayList<>((maxX - minX + 1) * (maxZ - minZ + 1));
+            for (int z = minZ; z <= maxZ; z++) {
+                for (int x = minX; x <= maxX; x++) {
+                    columns.add(new BlockPos(x, preferredY, z));
+                }
+            }
+            columns.sort(Comparator
+                    .comparingLong((BlockPos pos) -> horizontalDistanceSquared(pos, preferredX, preferredZ))
+                    .thenComparingInt(BlockPos::getX)
+                    .thenComparingInt(BlockPos::getZ));
+
+            for (BlockPos column : columns) {
+                addAirCandidatesForColumn(
+                        level,
+                        column.getX(),
+                        column.getZ(),
+                        preferredY,
+                        minY,
+                        maxY,
+                        candidates
+                );
+                if (candidates.size() >= MAX_AIR_CANDIDATES) {
+                    return List.copyOf(candidates);
+                }
+            }
+        }
+
+        return List.copyOf(candidates);
+    }
+
+    private static void addAirCandidatesForColumn(
+            ServerLevel level,
+            int x,
+            int z,
+            int preferredY,
+            int minY,
+            int maxY,
+            List<BlockPos> candidates
+    ) {
+        int maxDelta = Math.max(preferredY - minY, maxY - preferredY);
+        for (int delta = 0; delta <= maxDelta; delta++) {
+            int aboveY = preferredY + delta;
+            if (aboveY <= maxY) {
+                BlockPos above = new BlockPos(x, aboveY, z);
+                if (isOpenAirPosition(level, above)) {
+                    candidates.add(above);
+                    if (candidates.size() >= MAX_AIR_CANDIDATES) {
+                        return;
+                    }
+                }
+            }
+
+            if (delta == 0) {
+                continue;
+            }
+            int belowY = preferredY - delta;
+            if (belowY >= minY) {
+                BlockPos below = new BlockPos(x, belowY, z);
+                if (isOpenAirPosition(level, below)) {
+                    candidates.add(below);
+                    if (candidates.size() >= MAX_AIR_CANDIDATES) {
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    private static boolean isOpenAirPosition(ServerLevel level, BlockPos pos) {
+        if (!level.getWorldBorder().isWithinBounds(pos)) {
+            return false;
+        }
+        BlockPos above = pos.above();
+        return level.getBlockState(pos).isAir()
+                && level.getBlockState(above).isAir();
+    }
+
+    private static long chunkDistanceScore(ChunkPos chunk, int preferredX, int preferredZ) {
+        int centerX = chunk.getMiddleBlockX();
+        int centerZ = chunk.getMiddleBlockZ();
+        long dx = centerX - (long) preferredX;
+        long dz = centerZ - (long) preferredZ;
+        return dx * dx + dz * dz;
+    }
+
+    private static long horizontalDistanceSquared(BlockPos pos, int preferredX, int preferredZ) {
+        long dx = pos.getX() - (long) preferredX;
+        long dz = pos.getZ() - (long) preferredZ;
+        return dx * dx + dz * dz;
+    }
+
+    private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
     }
 
     private static List<BlockPos> findSafeSurfacePositions(ServerLevel level, BlockPos configuredPosition, int offsetY) {

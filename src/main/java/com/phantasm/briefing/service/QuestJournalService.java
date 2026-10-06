@@ -115,6 +115,9 @@ public final class QuestJournalService {
         for (QuestObjectiveSpec objective : phase.objectives()) {
             boolean completed = phaseCompleted || BriefingPlayerData.isObjectiveCompleted(
                     player, quest.questId(), phase.phaseId(), objective.objectiveId());
+            boolean active = !completed
+                    && phaseCurrent
+                    && QuestRuntimeService.isObjectiveActive(player, quest, objective);
             boolean manualReadable = objective.objectiveType() == QuestObjectiveType.READ_MANUAL
                     && (phaseCurrent || phaseCompleted)
                     && QuestRuntimeService.isManualReadAccessible(player, quest, phase, objective);
@@ -129,6 +132,7 @@ public final class QuestJournalService {
                     progress,
                     objective.requiredCount(),
                     completed,
+                    active,
                     manualReadable,
                     ManualVisibilityService.visibleRefs(player, objective.manualRefs())
             ));

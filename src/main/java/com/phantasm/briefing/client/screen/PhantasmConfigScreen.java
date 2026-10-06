@@ -5,6 +5,7 @@ import com.phantasm.briefing.config.PhantasmBriefingClientConfig;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
@@ -25,8 +26,7 @@ public final class PhantasmConfigScreen extends PixelGridScreen {
     private boolean dirty;
 
     private boolean questTrackingEnabled;
-    private boolean questTrackerPanelEnabled;
-    private boolean questTrackerShowAllObjectives;
+    private boolean questTrackerShowObjectiveTrackingText;
     private boolean questTrackerAnchorRight;
     private boolean worldMarkerEnabled;
     private boolean npcIndicatorEnabled;
@@ -327,8 +327,7 @@ public final class PhantasmConfigScreen extends PixelGridScreen {
     private void saveAndClose() {
         PhantasmBriefingClientConfig.save(
                 this.questTrackingEnabled,
-                this.questTrackerPanelEnabled,
-                this.questTrackerShowAllObjectives,
+                this.questTrackerShowObjectiveTrackingText,
                 this.questTrackerAnchorRight,
                 this.worldMarkerEnabled,
                 this.npcIndicatorEnabled,
@@ -341,8 +340,7 @@ public final class PhantasmConfigScreen extends PixelGridScreen {
 
     private void loadCurrentValues() {
         this.questTrackingEnabled = PhantasmBriefingClientConfig.questTrackingEnabled();
-        this.questTrackerPanelEnabled = PhantasmBriefingClientConfig.questTrackerPanelEnabled();
-        this.questTrackerShowAllObjectives = PhantasmBriefingClientConfig.questTrackerShowAllObjectives();
+        this.questTrackerShowObjectiveTrackingText = PhantasmBriefingClientConfig.questTrackerShowObjectiveTrackingText();
         this.questTrackerAnchorRight = PhantasmBriefingClientConfig.questTrackerAnchorRight();
         this.worldMarkerEnabled = PhantasmBriefingClientConfig.worldMarkerEnabled();
         this.npcIndicatorEnabled = PhantasmBriefingClientConfig.npcIndicatorEnabled();
@@ -353,8 +351,7 @@ public final class PhantasmConfigScreen extends PixelGridScreen {
 
     private void restoreDefaults() {
         this.questTrackingEnabled = true;
-        this.questTrackerPanelEnabled = true;
-        this.questTrackerShowAllObjectives = false;
+        this.questTrackerShowObjectiveTrackingText = false;
         this.questTrackerAnchorRight = false;
         this.worldMarkerEnabled = true;
         this.npcIndicatorEnabled = true;
@@ -474,17 +471,21 @@ public final class PhantasmConfigScreen extends PixelGridScreen {
     }
 
     private enum ConfigOption {
-        TRACKING_ENABLED(ConfigCategory.TRACKER, "任务追踪总开关", "关闭后隐藏任务面板和全部方向提示。") {
+        TRACKING_ENABLED(
+                ConfigCategory.TRACKER,
+                I18n.get("config.phantasmbriefing.tracker.enabled"),
+                I18n.get("config.phantasmbriefing.tracker.enabled.description")
+        ) {
             @Override boolean value(PhantasmConfigScreen screen) { return screen.questTrackingEnabled; }
             @Override void toggle(PhantasmConfigScreen screen) { screen.questTrackingEnabled = !screen.questTrackingEnabled; }
         },
-        PANEL_ENABLED(ConfigCategory.TRACKER, "任务追踪面板", "在屏幕角落显示当前任务与目标。") {
-            @Override boolean value(PhantasmConfigScreen screen) { return screen.questTrackerPanelEnabled; }
-            @Override void toggle(PhantasmConfigScreen screen) { screen.questTrackerPanelEnabled = !screen.questTrackerPanelEnabled; }
-        },
-        ALL_OBJECTIVES(ConfigCategory.TRACKER, "显示全部目标", "关闭时只显示当前任务的第一条目标。") {
-            @Override boolean value(PhantasmConfigScreen screen) { return screen.questTrackerShowAllObjectives; }
-            @Override void toggle(PhantasmConfigScreen screen) { screen.questTrackerShowAllObjectives = !screen.questTrackerShowAllObjectives; }
+        SHOW_OBJECTIVE_TRACKING_TEXT(
+                ConfigCategory.TRACKER,
+                I18n.get("config.phantasmbriefing.tracker.show_objective_tracking_text"),
+                I18n.get("config.phantasmbriefing.tracker.show_objective_tracking_text.description")
+        ) {
+            @Override boolean value(PhantasmConfigScreen screen) { return screen.questTrackerShowObjectiveTrackingText; }
+            @Override void toggle(PhantasmConfigScreen screen) { screen.questTrackerShowObjectiveTrackingText = !screen.questTrackerShowObjectiveTrackingText; }
         },
         ANCHOR_RIGHT(ConfigCategory.TRACKER, "面板所在位置", "在左上角与右上角之间切换。") {
             @Override boolean value(PhantasmConfigScreen screen) { return screen.questTrackerAnchorRight; }

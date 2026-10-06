@@ -351,12 +351,21 @@ public final class QuestRuntimeService {
                         : Math.min(objective.requiredCount(), Math.max(0,
                         BriefingPlayerData.objectiveProgress(
                                 player, quest.questId(), phase.phaseId(), objective.objectiveId())));
-                String title = objectiveDisplayName(objective);
-                StringBuilder line = new StringBuilder(completed ? "✓ " : "○ ").append(title);
-                if (objective.isEventDriven()) {
-                    line.append(" (").append(progress).append('/').append(objective.requiredCount()).append(')');
+                List<String> displayLines = objective.objectiveLines().isEmpty()
+                        ? List.of(objectiveDisplayName(objective))
+                        : objective.objectiveLines();
+                String progressSuffix = objective.isEventDriven()
+                        ? " (" + progress + "/" + objective.requiredCount() + ")"
+                        : "";
+                List<String> target = completed ? completedLines : pending;
+                for (int lineIndex = 0; lineIndex < displayLines.size(); lineIndex++) {
+                    String text = displayLines.get(lineIndex);
+                    if (lineIndex == 0) {
+                        target.add((completed ? "✓ " : "○ ") + text + progressSuffix);
+                    } else {
+                        target.add("  " + text);
+                    }
                 }
-                (completed ? completedLines : pending).add(line.toString());
             }
         }
         if (!pending.isEmpty() || !completedLines.isEmpty()) {
@@ -562,6 +571,34 @@ public final class QuestRuntimeService {
                 .anyMatch(candidate -> candidate.objectiveId().equals(objective.objectiveId()));
     }
 
+    public static boolean isObjectiveActive(
+            ServerPlayer player, String questId, String phaseId, String objectiveId) {
+        QuestSpec quest = QuestDataManager.getInstance().getQuest(questId).orElse(null);
+        if (quest == null || phaseId == null || phaseId.isBlank()
+                || objectiveId == null || objectiveId.isBlank()) {
+            return false;
+        }
+        QuestPhaseSpec phase = quest.phase(phaseId);
+        QuestObjectiveSpec objective = phase == null ? null : phase.objective(objectiveId);
+        if (objective == null || !isPhaseActive(player, quest, phase.phaseId())) {
+            return false;
+        }
+        for (QuestObjectiveSpec candidate : phase.objectives()) {
+            if (BriefingPlayerData.isObjectiveCompleted(
+                    player, quest.questId(), phase.phaseId(), candidate.objectiveId())
+                    || !BriefingConditionService.all(player, null, candidate.conditions())) {
+                continue;
+            }
+            if (candidate.objectiveId().equals(objective.objectiveId())) {
+                return true;
+            }
+            if (phase.objectiveMode() != QuestObjectiveMode.FREE) {
+                return false;
+            }
+        }
+        return false;
+    }
+
     public static boolean isObjectiveCompleted(ServerPlayer player, String questId, String objectiveId) {
         QuestSpec quest = QuestDataManager.getInstance().getQuest(questId).orElse(null);
         if (quest == null || objectiveId == null || objectiveId.isBlank()) {
@@ -692,6 +729,11 @@ public final class QuestRuntimeService {
         }
         if (BriefingPlayerData.isObjectiveCompleted(player, questId, phase.phaseId(), objectiveId)) {
             return true;
+        }
+        // Sequential phases must not be bypassed by dialogue/manual actions that target
+        // a later objective directly. FREE mode still exposes every eligible objective.
+        if (!isObjectiveActive(player, quest, objective)) {
+            return false;
         }
         if (!BriefingConditionService.all(player, null, objective.conditions())) {
             return false;

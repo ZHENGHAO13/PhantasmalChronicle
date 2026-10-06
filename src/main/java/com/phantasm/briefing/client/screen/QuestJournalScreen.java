@@ -405,10 +405,11 @@ public final class QuestJournalScreen extends PixelGridScreen {
                         boolean hovered = objective.manualReadable()
                                 && mouseX >= x + 18 && mouseX < x + width - 4
                                 && mouseY >= rowTop && mouseY < rowTop + rowHeight;
-                        JournalOrnaments.StatusTone objectiveTone = inactive ? JournalOrnaments.StatusTone.INACTIVE
-                                : objective.completed() ? JournalOrnaments.StatusTone.COMPLETED : JournalOrnaments.StatusTone.ACTIVE;
+                        boolean objectiveInactive = inactive || (!objective.completed() && !objective.active());
+                        JournalOrnaments.StatusTone objectiveTone = objective.completed() ? JournalOrnaments.StatusTone.COMPLETED
+                                : objectiveInactive ? JournalOrnaments.StatusTone.INACTIVE : JournalOrnaments.StatusTone.ACTIVE;
                         JournalOrnaments.statusCard(graphics, x + 18, rowTop, width - 23, rowHeight, objectiveTone,
-                                objective.manualReadable() && !objective.completed(), hovered, false);
+                                objective.active() && objective.manualReadable() && !objective.completed(), hovered, false);
                         if (objective.manualReadable()) {
                             ManualReferenceSpec primaryRef = objective.manualRefs().get(0);
                             manualHitboxes.add(new ManualHitbox(x + 18, rowTop, width - 23, rowHeight, primaryRef,
@@ -424,11 +425,12 @@ public final class QuestJournalScreen extends PixelGridScreen {
                                 JournalOrnaments.statusText(objectiveTone), false);
                         y += rowHeight + 2;
                         y = renderManualLinks(graphics, objective.manualRefs(), x + 25, y, width - 31,
-                                selected.questId(), phase.phaseId(), objective, inactive);
+                                selected.questId(), phase.phaseId(), objective, objectiveInactive);
                         continue;
                     }
-                    JournalOrnaments.StatusTone objectiveTone = inactive ? JournalOrnaments.StatusTone.INACTIVE
-                            : objective.completed() ? JournalOrnaments.StatusTone.COMPLETED : JournalOrnaments.StatusTone.ACTIVE;
+                    boolean objectiveInactive = inactive || (!objective.completed() && !objective.active());
+                    JournalOrnaments.StatusTone objectiveTone = objective.completed() ? JournalOrnaments.StatusTone.COMPLETED
+                            : objectiveInactive ? JournalOrnaments.StatusTone.INACTIVE : JournalOrnaments.StatusTone.ACTIVE;
                     int objectiveRowTop = y - 2;
                     int objectiveRowHeight = font.lineHeight + 7;
                     int objectiveTextY = objectiveRowTop + Math.max(0, (objectiveRowHeight - font.lineHeight) / 2);
@@ -445,10 +447,10 @@ public final class QuestJournalScreen extends PixelGridScreen {
                         int progressX = x + width - 12 - progressWidth;
                         titleWidth = Math.max(0, progressX - x - 39);
                         graphics.fill(progressX, objectiveRowTop, progressX + progressWidth,
-                                objectiveRowTop + objectiveRowHeight, inactive ? 0xD315181D : 0xCF191C22);
+                                objectiveRowTop + objectiveRowHeight, objectiveInactive ? 0xD315181D : 0xCF191C22);
                         graphics.fill(progressX, objectiveRowTop, progressX + 2,
                                 objectiveRowTop + objectiveRowHeight,
-                                inactive ? JournalOrnaments.ACCENT_MUTED : JournalOrnaments.ACCENT_BRASS);
+                                objectiveInactive ? JournalOrnaments.ACCENT_MUTED : JournalOrnaments.ACCENT_BRASS);
                         graphics.drawString(font, progress, progressX + 5, objectiveTextY,
                                 JournalOrnaments.statusText(objectiveTone), false);
                     }
@@ -456,7 +458,7 @@ public final class QuestJournalScreen extends PixelGridScreen {
                             x + 34, objectiveTextY, JournalOrnaments.statusText(objectiveTone), false);
                     y += font.lineHeight + 4;
                     y = renderManualLinks(graphics, objective.manualRefs(), x + 25, y, width - 31,
-                            selected.questId(), phase.phaseId(), objective, inactive);
+                            selected.questId(), phase.phaseId(), objective, objectiveInactive);
                 }
             }
             if (y > phaseStart + 27) {

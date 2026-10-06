@@ -919,6 +919,7 @@ public final class ContentMigrationService {
                 case "quest_not_started" -> "pb_quest_not_started";
                 case "quest_phase" -> "pb_quest_phase";
                 case "quest_phase_completed" -> "pb_quest_phase_completed";
+                case "quest_objective_active" -> "pb_quest_objective_active";
                 case "quest_objective_completed" -> "pb_quest_objective_completed";
                 default -> local;
             };
@@ -979,7 +980,7 @@ public final class ContentMigrationService {
                 String shopId = firstNonBlank(firstString(action, "shopId"), targetId);
                 if (!shopId.isBlank()) action.addProperty("shopId", shopId);
             }
-            case "give_item" -> {
+            case "give_item", "deliver_item" -> {
                 String itemId = firstNonBlank(firstString(action, "itemId"), targetId);
                 if (!itemId.isBlank()) action.addProperty("itemId", itemId);
             }

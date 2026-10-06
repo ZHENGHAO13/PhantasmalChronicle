@@ -72,7 +72,9 @@ config/phantasmbriefing/briefing_pack/
 
 ### 编辑与重载内容
 
-本仓库当前不包含 Phantasm Maker 网页页面及其说明文档。可使用文本编辑器参考示例编写 JSON，将文件放入对应的 `briefing_pack` 子目录，核对 ID 与引用后执行 `/pbriefing reload` 或 `/reload`。
+仓库包含 [Phantasm Maker 网页编辑器](tools/phantasm_maker/index.html)及[中英使用说明](tools/phantasm_maker/README.md)。下载仓库后，用支持目录读写的浏览器打开本地 `index.html`，选择整合包根目录，即可编辑任务、旅者手册、对话、NPC 和经济内容，再检查并写入内容包。GitHub 文件页只展示源码，不会运行编辑器。
+
+也可使用文本编辑器参考示例编写 JSON，将文件放入对应的 `briefing_pack` 子目录，核对 ID 与引用后执行 `/pbriefing reload` 或 `/reload`。
 
 运行时保留的编辑器热加载桥接仅监听本机 `127.0.0.1:38471`。编辑远程服务器内容时，需要将内容包同步到服务器，再由管理员重载。
 
@@ -127,6 +129,7 @@ sh ./gradlew runClient
 | `src/main/java/` | 模组源码 |
 | `src/main/resources/` | 模组元数据、语言文件与资源 |
 | `examples/briefing_pack/` | 外置内容示例 |
+| `tools/phantasm_maker/` | Phantasm Maker 网页编辑器与使用说明 |
 | `gradle/`、`gradlew*` | Gradle Wrapper |
 | `CHANGELOG.md` | 对外版本变更说明 |
 
@@ -202,7 +205,9 @@ JSON can also be supplied through a datapack under `data/<namespace>/<directory>
 
 ### Editing and reloading content
 
-This repository no longer includes the Phantasm Maker web page or its guide. Use a text editor and the examples to create JSON files, place them in the appropriate `briefing_pack` subdirectories, check IDs and references, and run `/pbriefing reload` or `/reload`.
+The repository includes the [Phantasm Maker web editor](tools/phantasm_maker/index.html) and its [bilingual guide](tools/phantasm_maker/README.md). Download the repository, open the local `index.html` in a browser supporting directory access, and select your modpack root. Edit quests, traveler manuals, dialogues, NPCs, and economy content, then validate and write the content pack. The GitHub file page displays source code; it does not run the editor.
+
+You can also use a text editor and the examples to create JSON files, place them in the appropriate `briefing_pack` subdirectories, check IDs and references, and run `/pbriefing reload` or `/reload`.
 
 The runtime's editor reload bridge still listens only on `127.0.0.1:38471`. For a remote server, transfer the content pack to that server and have an administrator reload it.
 
@@ -257,6 +262,7 @@ When reporting a problem, include the mod version or commit, reproduction steps,
 | `src/main/java/` | Mod source code |
 | `src/main/resources/` | Mod metadata, translations, and assets |
 | `examples/briefing_pack/` | Example external content |
+| `tools/phantasm_maker/` | Phantasm Maker web editor and usage guide |
 | `gradle/`, `gradlew*` | Gradle Wrapper |
 | `CHANGELOG.md` | User-facing version notes |
 

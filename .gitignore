@@ -50,7 +50,11 @@ Thumbs.db
 
 # Local-only collaboration records, checks, authoring tools and archives
 /.local/
-/tools/
+/tools/*
+!/tools/phantasm_maker/
+/tools/phantasm_maker/*
+!/tools/phantasm_maker/index.html
+!/tools/phantasm_maker/README.md
 /tests/
 /src/test/
 /可视化网页编辑器/

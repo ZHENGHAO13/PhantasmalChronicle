@@ -4,6 +4,7 @@
 
 ### 中文
 
+- 按用户要求纳入 Phantasm Maker 单文件网页编辑器与中英使用说明，支持任务、旅者手册、对话、NPC 和经济内容编辑；内部测试脚本与历史副本仍不交付。
 - 重新整理完整源码交付，保留模组功能、资源、外置内容示例、Gradle Wrapper 和许可证；移除共享范围中的自用检查与内部文档。
 - 清理没有调用入口的旧教程界面及网络包，保留任务日志中的旅者手册和阅读目标实现，修复旧源码的编译阻塞。
 - 纳入本地已有的任务追踪显示、物品交付动作、NPC 生成落点与客户端网络处理更新。
@@ -12,6 +13,7 @@
 
 ### English
 
+- Included the Phantasm Maker single-file web editor and bilingual usage guide at the user's request, covering quests, traveler manuals, dialogues, NPCs, and economy content. Internal test scripts and historical copies remain excluded.
 - Reorganized the complete source distribution, retaining mod functionality, resources, external content examples, the Gradle Wrapper, and licenses. Internal checks and collaboration documents are excluded.
 - Removed unreachable legacy tutorial screens and packets while retaining the journal's traveler manual and reading objectives, resolving the old compilation blockers.
 - Included existing local updates to quest tracking, item-delivery actions, NPC spawn placement, and client-side packet handling.

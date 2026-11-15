@@ -14,13 +14,6 @@ public final class ClientKeyMappings {
             CATEGORY
     );
 
-    public static final KeyMapping OPEN_QUEST_JOURNAL = new KeyMapping(
-            "key.phantasmbriefing.open_quest_journal",
-            InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_J,
-            CATEGORY
-    );
-
     private ClientKeyMappings() {
     }
 }

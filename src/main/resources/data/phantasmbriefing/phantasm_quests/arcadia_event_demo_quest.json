@@ -1,0 +1,97 @@
+{
+  "questId": "phantasmbriefing:arcadia_event_demo_quest",
+  "title": "事件目标演示",
+  "description": "用于演示本模组的 INTERACT / COLLECT / KILL 事件型 objective。",
+  "repeatable": true,
+  "initialPhaseId": "event_flow",
+  "phases": [
+    {
+      "phaseId": "event_flow",
+      "title": "事件目标链",
+      "completeQuestOnObjectivesCompleted": true,
+      "objectives": [
+        {
+          "objectiveId": "visit_training_ground",
+          "title": "前往训练场",
+          "type": "VISIT",
+          "radius": 5.0,
+          "objectiveLines": [
+            "前往训练场坐标点一次"
+          ],
+          "marker": {
+            "label": "训练场",
+            "dimension": "minecraft:overworld",
+            "x": 0.0,
+            "y": 64.0,
+            "z": 0.0
+          },
+          "hintType": "advance"
+        },
+        {
+          "objectiveId": "interact_with_guide",
+          "title": "与引导员交互",
+          "type": "TALK_TO",
+          "targetId": "arcadia_intro",
+          "requiredCount": 1,
+          "objectiveLines": [
+            "与任务 NPC arcadia_intro 交互一次"
+          ],
+          "conditions": [
+            {
+              "condition": "phantasmbriefing:quest_objective_completed",
+              "questId": "phantasmbriefing:arcadia_event_demo_quest",
+              "objectiveId": "visit_training_ground"
+            }
+          ],
+          "targetNodeIds": [
+            "arcadia_intro"
+          ],
+          "hintType": "advance"
+        },
+        {
+          "objectiveId": "collect_emeralds",
+          "title": "收集绿宝石",
+          "type": "COLLECT",
+          "targetId": "minecraft:emerald",
+          "requiredCount": 3,
+          "objectiveLines": [
+            "在背包中持有 3 个绿宝石"
+          ],
+          "conditions": [
+            {
+              "condition": "phantasmbriefing:quest_objective_completed",
+              "questId": "phantasmbriefing:arcadia_event_demo_quest",
+              "objectiveId": "interact_with_guide"
+            }
+          ],
+          "hintType": "advance"
+        },
+        {
+          "objectiveId": "kill_zombie",
+          "title": "击杀僵尸",
+          "type": "KILL",
+          "targetId": "minecraft:zombie",
+          "requiredCount": 1,
+          "objectiveLines": [
+            "击杀 1 只僵尸"
+          ],
+          "conditions": [
+            {
+              "condition": "phantasmbriefing:quest_objective_completed",
+              "questId": "phantasmbriefing:arcadia_event_demo_quest",
+              "objectiveId": "collect_emeralds"
+            }
+          ],
+          "hintType": "advance"
+        }
+      ],
+      "hintType": "advance"
+    }
+  ],
+  "unlockConditions": [
+    {
+      "condition": "phantasmbriefing:always"
+    }
+  ],
+  "trackerTitle": "测试事件型目标"
+}

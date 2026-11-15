@@ -4,17 +4,10 @@ import com.google.gson.JsonObject;
 import net.minecraft.util.GsonHelper;
 import javax.annotation.Nonnull;
 
-import static com.phantasm.briefing.data.JsonDataUtil.sanitize;
-
-/** Current runtime action model. Old action shapes are normalized by ContentMigrationService. */
 public record DialogueAction(
         DialogueActionType type,
-        String targetId,
-        int count
+        String targetId
 ) {
-    public DialogueAction(DialogueActionType type, String targetId) {
-        this(type, targetId, 1);
-    }
 
     public static DialogueAction fromJson(@Nonnull String sourceDescription, @Nonnull JsonObject json) {
         String rawType = sanitize(GsonHelper.getAsString(json, "type", ""));
@@ -22,42 +15,72 @@ public record DialogueAction(
             throw new IllegalArgumentException("Dialogue action type is blank: " + sourceDescription);
         }
 
-        DialogueActionType type = DialogueActionType.fromSerializedName(rawType);
+        DialogueActionType type = DialogueActionType.fromSerializedName(normalizeSerializedType(rawType));
         String targetId = switch (type) {
-            case COMPLETE_QUEST, COMPLETE_FTB_QUEST, START_QUEST ->
-                    sanitize(GsonHelper.getAsString(json, "questId", ""));
+            case COMPLETE_QUEST -> firstNonBlank(
+                    sanitize(GsonHelper.getAsString(json, "questId", "")),
+                    sanitize(GsonHelper.getAsString(json, "targetId", ""))
+            );
             case COMPLETE_OBJECTIVE -> encodeQuestObjectiveTarget(
                     sanitize(GsonHelper.getAsString(json, "questId", "")),
                     sanitize(GsonHelper.getAsString(json, "objectiveId", ""))
+            );
+            case START_QUEST -> firstNonBlank(
+                    sanitize(GsonHelper.getAsString(json, "questId", "")),
+                    sanitize(GsonHelper.getAsString(json, "targetId", ""))
             );
             case SET_QUEST_PHASE -> encodeQuestPhaseTarget(
                     sanitize(GsonHelper.getAsString(json, "questId", "")),
                     sanitize(GsonHelper.getAsString(json, "phaseId", ""))
             );
-            case OPEN_NODE -> sanitize(GsonHelper.getAsString(json, "nodeId", ""));
-            case OPEN_SHOP -> sanitize(GsonHelper.getAsString(json, "shopId", ""));
-            case GIVE_ITEM, DELIVER_ITEM -> sanitize(GsonHelper.getAsString(json, "itemId", ""));
-            case SET_FLAG -> sanitize(GsonHelper.getAsString(json, "flagName", ""));
-            case REMOVE_CONTEXT_NPC, CLOSE_DIALOGUE -> "";
+            case OPEN_NODE -> firstNonBlank(
+                    sanitize(GsonHelper.getAsString(json, "nodeId", "")),
+                    sanitize(GsonHelper.getAsString(json, "targetId", ""))
+            );
+            case OPEN_SHOP -> firstNonBlank(
+                    sanitize(GsonHelper.getAsString(json, "shopId", "")),
+                    sanitize(GsonHelper.getAsString(json, "targetId", ""))
+            );
+            case SET_FLAG -> firstNonBlank(
+                    sanitize(GsonHelper.getAsString(json, "flagName", "")),
+                    firstNonBlank(
+                            sanitize(GsonHelper.getAsString(json, "flag", "")),
+                            sanitize(GsonHelper.getAsString(json, "targetId", ""))
+                    )
+            );
+            case CLOSE_DIALOGUE -> "";
         };
-        int count = (type == DialogueActionType.GIVE_ITEM || type == DialogueActionType.DELIVER_ITEM)
-                ? Math.max(1, GsonHelper.getAsInt(json, "count", 1))
-                : 1;
 
         if ((type == DialogueActionType.COMPLETE_QUEST
-                || type == DialogueActionType.COMPLETE_FTB_QUEST
                 || type == DialogueActionType.COMPLETE_OBJECTIVE
                 || type == DialogueActionType.START_QUEST
                 || type == DialogueActionType.SET_QUEST_PHASE
                 || type == DialogueActionType.OPEN_NODE
                 || type == DialogueActionType.OPEN_SHOP
-                || type == DialogueActionType.GIVE_ITEM
-                || type == DialogueActionType.DELIVER_ITEM
                 || type == DialogueActionType.SET_FLAG) && targetId.isBlank()) {
-            throw new IllegalArgumentException("Dialogue action target is blank for " + type + ": " + sourceDescription);
+            throw new IllegalArgumentException("Dialogue action targetId is blank for " + type + ": " + sourceDescription);
         }
 
-        return new DialogueAction(type, targetId, count);
+        return new DialogueAction(type, targetId);
+    }
+
+    @Nonnull
+    private static String firstNonBlank(@Nonnull String first, @Nonnull String second) {
+        return first.isBlank() ? second : first;
+    }
+
+    @Nonnull
+    private static String sanitize(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    @Nonnull
+    private static String normalizeSerializedType(String rawType) {
+        return switch (sanitize(rawType)) {
+            case "close" -> "close_dialogue";
+            case "open_trade" -> "open_shop";
+            default -> rawType;
+        };
     }
 
     @Nonnull
@@ -82,23 +105,23 @@ public record DialogueAction(
 
     @Nonnull
     public static String decodeQuestId(String encodedTargetId) {
-        String[] parts = splitQuestTarget(encodedTargetId);
+        String[] parts = splitQuestPhaseTarget(encodedTargetId);
         return parts.length == 2 ? parts[0] : "";
     }
 
     @Nonnull
     public static String decodePhaseId(String encodedTargetId) {
-        String[] parts = splitQuestTarget(encodedTargetId);
+        String[] parts = splitQuestPhaseTarget(encodedTargetId);
         return parts.length == 2 ? parts[1] : "";
     }
 
     @Nonnull
     public static String decodeObjectiveId(String encodedTargetId) {
-        String[] parts = splitQuestTarget(encodedTargetId);
+        String[] parts = splitQuestPhaseTarget(encodedTargetId);
         return parts.length == 2 ? parts[1] : "";
     }
 
-    private static String[] splitQuestTarget(String encodedTargetId) {
+    private static String[] splitQuestPhaseTarget(String encodedTargetId) {
         String sanitized = sanitize(encodedTargetId);
         int separatorIndex = sanitized.indexOf("::");
         if (separatorIndex <= 0 || separatorIndex >= sanitized.length() - 2) {

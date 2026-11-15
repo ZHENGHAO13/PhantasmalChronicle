@@ -26,7 +26,6 @@ import com.phantasm.briefing.service.QuestTreeService;
 import com.phantasm.briefing.service.QuestTrackerService;
 import com.phantasm.briefing.service.StructureSearchCompatService;
 import com.phantasm.briefing.service.NpcSpawnService;
-import com.phantasm.briefing.service.NpcStructureSpawnService;
 import com.phantasm.briefing.util.QuestNpcHelper;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -149,31 +148,7 @@ public final class PBriefingCommands {
                                                 .executes(context -> executeNpcSpawn(
                                                         context,
                                                         Vec3Argument.getVec3(context, "position")
-                                                )))))
-                        .then(Commands.literal("refresh")
-                                .executes(context -> executeNpcRefresh(context, null))
-                                .then(Commands.argument("bindingId", wordArgument())
-                                        .suggests((context, builder) -> SharedSuggestionProvider.suggest(
-                                                NpcBindingDataManager.getInstance().getBindingIds(),
-                                                builder
-                                        ))
-                                        .executes(context -> executeNpcRefresh(
-                                                context,
-                                                StringArgumentType.getString(context, "bindingId")
-                                        ))))
-                        .then(Commands.literal("respawn")
-                                .executes(context -> executeNpcRespawn(context, null))
-                                .then(Commands.argument("bindingId", wordArgument())
-                                        .suggests((context, builder) -> SharedSuggestionProvider.suggest(
-                                                NpcBindingDataManager.getInstance().getBindingIds(),
-                                                builder
-                                        ))
-                                        .executes(context -> executeNpcRespawn(
-                                                context,
-                                                StringArgumentType.getString(context, "bindingId")
-                                        ))))
-                        .then(Commands.literal("purge_looked")
-                                .executes(PBriefingCommands::executeNpcPurgeLooked)))
+                                                ))))))
                 .then(Commands.literal("setnpc")
                         .then(Commands.argument("questNodeId", wordArgument())
                                 .executes(context -> executeSetNpc(context, StringArgumentType.getString(context, "questNodeId")))))
@@ -200,7 +175,7 @@ public final class PBriefingCommands {
         List<QuestJournalEntry> entries = QuestJournalService.buildEntries(player);
         ModNetwork.CHANNEL.send(
                 PacketDistributor.PLAYER.with(() -> player),
-                OpenQuestJournalS2CPacket.forPlayer(player)
+                new OpenQuestJournalS2CPacket(entries)
         );
         context.getSource().sendSuccess(() -> literal("已打开任务日志。"), false);
         return 1;
@@ -347,7 +322,7 @@ public final class PBriefingCommands {
                 PacketDistributor.PLAYER.with(() -> player),
                 new SetQuestTrackerHudVisibilityS2CPacket(enabled)
         );
-        QuestEntityHintService.requestSync(player);
+        QuestEntityHintService.syncToClient(player);
         context.getSource().sendSuccess(
                 () -> literal(enabled ? "已开启任务追踪 HUD。" : "已关闭任务追踪 HUD，仅保留附近任务实体提示。"),
                 false
@@ -461,70 +436,6 @@ public final class PBriefingCommands {
                 () -> literal(
                         "已生成 NPC “" + binding.bindingId() + "” 于 "
                                 + String.format("%.1f, %.1f, %.1f", spawnedAt.x, spawnedAt.y, spawnedAt.z)
-                ),
-                true
-        );
-        return 1;
-    }
-
-    private static int executeNpcRefresh(
-            CommandContext<CommandSourceStack> context,
-            @Nullable String bindingId
-    ) throws CommandSyntaxException {
-        ServerPlayer player = context.getSource().getPlayerOrException();
-        int refreshed = NpcStructureSpawnService.refreshNearbyGeneratedNpcs(player, bindingId);
-        context.getSource().sendSuccess(
-                () -> Component.translatable("msg.phantasmbriefing.npc_refresh_success")
-                        .append(Component.literal(Integer.toString(refreshed))),
-                false
-        );
-        return Math.max(1, refreshed);
-    }
-
-    private static int executeNpcRespawn(
-            CommandContext<CommandSourceStack> context,
-            @Nullable String bindingId
-    ) throws CommandSyntaxException {
-        ServerPlayer player = context.getSource().getPlayerOrException();
-        int removed = NpcStructureSpawnService.respawnNearbyGeneratedNpcs(player, bindingId);
-        context.getSource().sendSuccess(
-                () -> Component.translatable("msg.phantasmbriefing.npc_respawn_success")
-                        .append(Component.literal(Integer.toString(removed))),
-                false
-        );
-        return Math.max(1, removed);
-    }
-
-    private static int executeNpcPurgeLooked(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        ServerPlayer player = context.getSource().getPlayerOrException();
-        Entity target = findLookTarget(player);
-        if (target == null) {
-            throw NO_ENTITY_TARGET.create();
-        }
-        if (!(target instanceof LivingEntity livingEntity) || target instanceof Player) {
-            throw INVALID_ENTITY_TARGET.create();
-        }
-
-        NpcStructureSpawnService.ManualNpcRemoval result =
-                NpcStructureSpawnService.removeManagedNpcManually(livingEntity);
-        if (!result.removed()) {
-            context.getSource().sendFailure(Component.literal(
-                    "目标没有 PhantasmalChronicle 管理标记，已拒绝删除。"
-            ));
-            return 0;
-        }
-
-        QuestEntityHintService.requestSync(player);
-        String bindingText = result.bindingId().isBlank() ? "(无 bindingId)" : result.bindingId();
-        String registeredWarning = result.bindingStillRegistered()
-                ? "；警告：该 Binding 当前仍存在，后续规则可能再次生成 NPC"
-                : "";
-        context.getSource().sendSuccess(
-                () -> Component.literal(
-                        "已强制清理准星目标 NPC，Binding=" + bindingText
-                                + "，生成记录=" + result.removedSpawnRecords()
-                                + "，结构完成记录=" + result.removedCompletionRecords()
-                                + registeredWarning
                 ),
                 true
         );

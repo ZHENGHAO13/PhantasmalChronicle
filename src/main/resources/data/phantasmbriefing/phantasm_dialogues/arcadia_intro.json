@@ -1,0 +1,33 @@
+{
+  "nodeId": "arcadia_intro",
+  "title": "引导之律",
+  "presentation": "briefing",
+  "lines": [
+    "测试文本",
+    "测试文本"
+  ],
+  "triggerVFX": false,
+  "ftbQuestIdToComplete": "",
+  "nextNodeId": "",
+  "options": [
+    {
+      "optionId": "accept_briefing",
+      "label": "继续前往记忆回响",
+      "actions": [
+        {
+          "type": "open_node",
+          "targetId": "arcadia_memory_echo"
+        }
+      ]
+    },
+    {
+      "optionId": "close_briefing",
+      "label": "先记下这些内容",
+      "actions": [
+        {
+          "type": "close_dialogue"
+        }
+      ]
+    }
+  ]
+}

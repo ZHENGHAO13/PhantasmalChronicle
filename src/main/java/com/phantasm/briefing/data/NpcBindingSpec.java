@@ -13,32 +13,39 @@ import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.phantasm.briefing.data.JsonDataUtil.sanitize;
-
 public record NpcBindingSpec(
         String bindingId,
         String entityType,
         String questNodeId,
-        List<String> questIds,
+        String questId,
         String prerequisiteLockedText,
         String profession,
         String customName,
-        NpcTypewriterSoundSpec typewriterSound,
         List<NpcStructureSpawnSpec> spawnRules
 ) {
 
     public static NpcBindingSpec fromJson(@Nonnull String sourceDescription, @Nonnull JsonObject json) {
         String bindingId = sanitize(GsonHelper.getAsString(json, "bindingId", ""));
+        if (bindingId.isBlank()) {
+            bindingId = sanitize(GsonHelper.getAsString(json, "id", ""));
+        }
 
         String entityType = sanitize(GsonHelper.getAsString(json, "entityType", ""));
         String questNodeId = sanitize(GsonHelper.getAsString(json, "questNodeId", ""));
-        List<String> questIds = readQuestIds(json);
+        String questId = sanitize(GsonHelper.getAsString(json, "questId", ""));
         String prerequisiteLockedText = sanitizeMultiline(GsonHelper.getAsString(json, "prerequisiteLockedText", ""));
         String profession = sanitize(GsonHelper.getAsString(json, "profession", ""));
         String customName = sanitize(GsonHelper.getAsString(json, "customName", ""));
-        NpcTypewriterSoundSpec typewriterSound = NpcTypewriterSoundSpec.fromNpcJson(json);
 
         List<NpcStructureSpawnSpec> spawnRules = new ArrayList<>();
+        if (json.has("spawn") && json.get("spawn").isJsonObject()) {
+            spawnRules.add(NpcStructureSpawnSpec.fromJson(
+                    sourceDescription + "#spawn",
+                    bindingId,
+                    0,
+                    json.getAsJsonObject("spawn")
+            ));
+        }
         if (json.has("spawns") && json.get("spawns").isJsonArray()) {
             JsonArray spawns = json.getAsJsonArray("spawns");
             for (int i = 0; i < spawns.size(); i++) {
@@ -60,30 +67,20 @@ public record NpcBindingSpec(
         if (entityType.isBlank()) {
             throw new IllegalArgumentException("NPC binding entityType is blank: " + sourceDescription);
         }
+        if (questNodeId.isBlank()) {
+            throw new IllegalArgumentException("NPC binding questNodeId is blank: " + sourceDescription);
+        }
+
         return new NpcBindingSpec(
                 bindingId,
                 entityType,
                 questNodeId,
-                List.copyOf(questIds),
+                questId,
                 prerequisiteLockedText,
                 profession,
                 customName,
-                typewriterSound,
                 List.copyOf(spawnRules)
         );
-    }
-
-    @Nonnull
-    private static List<String> readQuestIds(@Nonnull JsonObject json) {
-        List<String> result = new ArrayList<>();
-        if (json.has("questIds") && json.get("questIds").isJsonArray()) {
-            for (var element : json.getAsJsonArray("questIds")) {
-                if (!element.isJsonPrimitive()) continue;
-                String value = sanitize(element.getAsString());
-                if (!value.isBlank() && !result.contains(value)) result.add(value);
-            }
-        }
-        return result;
     }
 
     public boolean matches(Entity entity) {
@@ -116,6 +113,15 @@ public record NpcBindingSpec(
         }
 
         return true;
+    }
+
+    public Component describe() {
+        return Component.literal("entityType=" + entityType + ", profession=" + profession + ", customName=" + customName);
+    }
+
+    @Nonnull
+    private static String sanitize(String value) {
+        return value == null ? "" : value.trim();
     }
 
     @Nonnull

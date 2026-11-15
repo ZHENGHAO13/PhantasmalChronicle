@@ -1,0 +1,19 @@
+{
+  "questId": "guild_supply",
+  "title": "公会补给",
+  "description": "公会已经向你开放基础补给渠道。",
+  "objectiveLines": [
+    "前往公会补给商店检查可购买内容。",
+    "完成前置任务后，更多商品会自动解锁。"
+  ],
+  "trackerTitle": "前往公会补给",
+  "marker": {
+    "label": "公会补给点",
+    "dimension": "minecraft:overworld",
+    "x": 0.0,
+    "y": 64.0,
+    "z": 0.0
+  },
+  "ftbQuestId": "1B766784FBBE7D51",
+  "requiredQuestId": ""
+}

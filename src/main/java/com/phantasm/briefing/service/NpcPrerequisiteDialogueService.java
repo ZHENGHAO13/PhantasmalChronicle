@@ -23,27 +23,18 @@ public final class NpcPrerequisiteDialogueService {
 
     public static boolean openLockedNoticeIfNeeded(ServerPlayer player, Entity npc) {
         Optional<NpcBindingSpec> binding = resolveBinding(npc);
-        if (binding.isEmpty() || binding.get().questIds().isEmpty()) {
+        if (binding.isEmpty() || binding.get().questId().isBlank()) {
             return false;
         }
 
-        boolean foundLinkedQuest = false;
-        for (String questId : binding.get().questIds()) {
-            QuestSpec quest = QuestDataManager.getInstance().getQuest(questId).orElse(null);
-            if (quest == null) {
-                continue;
-            }
-            foundLinkedQuest = true;
-            if (quest.allParentQuestIds().isEmpty()) {
-                return false;
-            }
-            boolean blocked = quest.allParentQuestIds().stream()
-                    .anyMatch(prerequisiteId -> !QuestRuntimeService.isQuestCompleted(player, prerequisiteId));
-            if (!blocked) {
-                return false;
-            }
+        QuestSpec quest = QuestDataManager.getInstance().getQuest(binding.get().questId()).orElse(null);
+        if (quest == null || quest.allParentQuestIds().isEmpty()) {
+            return false;
         }
-        if (!foundLinkedQuest) {
+
+        boolean hasIncompletePrerequisite = quest.allParentQuestIds().stream()
+                .anyMatch(prerequisiteId -> !QuestRuntimeService.isQuestCompleted(player, prerequisiteId));
+        if (!hasIncompletePrerequisite) {
             return false;
         }
 
@@ -60,8 +51,7 @@ public final class NpcPrerequisiteDialogueService {
                         "prerequisite_locked:" + binding.get().bindingId(),
                         title,
                         lines,
-                        npc.getId(),
-                        binding.get().typewriterSound()
+                        npc.getId()
                 )
         );
         return true;

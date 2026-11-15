@@ -12,24 +12,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nonnull;
-
-import static com.phantasm.briefing.data.JsonDataUtil.sanitize;
-import static com.phantasm.briefing.data.JsonDataUtil.readText;
-import static com.phantasm.briefing.data.JsonDataUtil.readObjectArray;
-import static com.phantasm.briefing.data.JsonDataUtil.normalizeDialogueAutoTrigger;
+import javax.annotation.Nullable;
 
 public record DialogueSpec(
         String dialogueId,
         String defaultNpcName,
         String startNodeId,
-        List<String> entryNodeIds,
         List<DialogueSpecNode> nodes
 ) {
     private static final String NODE_ID_SEPARATOR = "::";
 
     public static DialogueSpec fromJson(@Nonnull String sourceDescription, @Nonnull JsonObject json) {
         String dialogueId = sanitize(GsonHelper.getAsString(json, "id", ""));
-        String defaultNpcName = readText(json, "defaultNpc");
+        String defaultNpcName = parseText(json.get("defaultNpc"));
         String startNodeId = sanitize(GsonHelper.getAsString(json, "startNodeId", "root"));
         if (dialogueId.isBlank()) {
             throw new IllegalArgumentException("Dialogue id is blank: " + sourceDescription);
@@ -44,55 +39,16 @@ public record DialogueSpec(
             throw new IllegalArgumentException("Dialogue nodes are empty: " + sourceDescription);
         }
 
-        String resolvedStartNodeId = startNodeId.isBlank() ? "root" : startNodeId;
-        List<String> entryNodeIds = new ArrayList<>();
-        if (json.has("entryNodeIds") && json.get("entryNodeIds").isJsonArray()) {
-            for (JsonElement element : json.getAsJsonArray("entryNodeIds")) {
-                String entryNodeId = sanitize(element.getAsString());
-                if (!entryNodeId.isBlank() && !entryNodeIds.contains(entryNodeId)) {
-                    entryNodeIds.add(entryNodeId);
-                }
-            }
-        }
-        if (entryNodeIds.isEmpty()) {
-            entryNodeIds.add(resolvedStartNodeId);
-        }
-
         return new DialogueSpec(
                 dialogueId,
                 defaultNpcName.isBlank() ? dialogueId : defaultNpcName,
-                resolvedStartNodeId,
-                List.copyOf(entryNodeIds),
+                startNodeId.isBlank() ? "root" : startNodeId,
                 List.copyOf(nodes)
         );
     }
 
     public String getScopedStartNodeId() {
         return scopeNodeId(this.dialogueId, this.startNodeId);
-    }
-
-    public List<String> getScopedEntryNodeIds() {
-        Set<String> bottomNodeIds = new LinkedHashSet<>();
-        for (DialogueSpecNode node : this.nodes) {
-            if (node.keepAtBottom()) {
-                bottomNodeIds.add(node.nodeId());
-            }
-        }
-
-        List<String> ordered = new ArrayList<>();
-        for (String nodeId : this.entryNodeIds) {
-            if (!bottomNodeIds.contains(nodeId)) {
-                ordered.add(nodeId);
-            }
-        }
-        for (String nodeId : this.entryNodeIds) {
-            if (bottomNodeIds.contains(nodeId)) {
-                ordered.add(nodeId);
-            }
-        }
-        return ordered.stream()
-                .map(nodeId -> scopeNodeId(this.dialogueId, nodeId))
-                .toList();
     }
 
     public Map<String, DialogueNode> flattenNodes() {
@@ -111,6 +67,10 @@ public record DialogueSpec(
         return flattened;
     }
 
+    public static boolean looksLikeDialogueSpec(@Nonnull JsonObject json) {
+        return json.has("id") && json.has("nodes");
+    }
+
     @Nonnull
     public static String scopeNodeId(@Nonnull String dialogueId, @Nonnull String nodeId) {
         String normalizedDialogueId = sanitize(dialogueId);
@@ -124,15 +84,13 @@ public record DialogueSpec(
     public record DialogueSpecNode(
             String nodeId,
             String title,
-            List<DialogueContentEntry> contents,
-            boolean keepAtBottom,
+            List<String> lines,
             boolean triggerVfx,
             String nextNodeId,
-            String autoTrigger,
+            String requiredQuestId,
             DialoguePresentationMode presentationMode,
             List<DialogueOption> options,
-            List<JsonObject> conditions,
-            List<DialogueAction> completionActions
+            List<JsonObject> conditions
     ) {
         public static DialogueSpecNode fromJson(@Nonnull String sourceDescription, @Nonnull JsonObject json) {
             String nodeId = sanitize(GsonHelper.getAsString(json, "nodeId", ""));
@@ -140,51 +98,45 @@ public record DialogueSpec(
                 throw new IllegalArgumentException("Dialogue spec node id is blank: " + sourceDescription);
             }
 
-            String title = readText(json, "title");
-            List<DialogueContentEntry> contents = new ArrayList<>();
-            if (json.has("contents") && json.get("contents").isJsonArray()) {
-                for (JsonElement element : GsonHelper.getAsJsonArray(json, "contents")) {
-                    if (element.isJsonObject()) {
-                        DialogueContentEntry entry = DialogueContentEntry.fromJson(element.getAsJsonObject());
-                        if (!entry.value().isBlank()) contents.add(entry);
-                    }
-                }
+            String title = sanitize(GsonHelper.getAsString(json, "title", ""));
+            String textLine = parseText(json.get("text"));
+            List<String> lines = new ArrayList<>();
+            if (json.has("lines")) {
+                GsonHelper.getAsJsonArray(json, "lines").forEach(element -> lines.add(sanitize(element.getAsString())));
+            } else if (!textLine.isBlank()) {
+                lines.add(textLine);
             }
-            if (contents.isEmpty()) {
-                throw new IllegalArgumentException("Dialogue spec node contents are empty: " + sourceDescription);
+            if (lines.isEmpty()) {
+                throw new IllegalArgumentException("Dialogue spec node lines are empty: " + sourceDescription);
             }
 
             String nextNodeId = sanitize(GsonHelper.getAsString(json, "nextNodeId", ""));
-            boolean keepAtBottom = GsonHelper.getAsBoolean(json, "keepAtBottom", false);
+            String requiredQuestId = sanitize(GsonHelper.getAsString(json, "requiredQuestId", ""));
             boolean triggerVfx = GsonHelper.getAsBoolean(json, "triggerVFX", false);
-            String autoTrigger = normalizeDialogueAutoTrigger(GsonHelper.getAsString(json, "autoTrigger", "none"));
             DialoguePresentationMode presentationMode = DialoguePresentationMode.fromSerializedName(
                     GsonHelper.getAsString(json, "presentation", "briefing")
             );
 
             List<DialogueOption> options = new ArrayList<>();
-            if (json.has("choices") && json.get("choices").isJsonArray()) {
+            if (json.has("choices")) {
                 for (JsonElement element : GsonHelper.getAsJsonArray(json, "choices")) {
-                    if (element.isJsonObject()) {
-                        options.add(DialogueOption.fromJson(sourceDescription + "#" + nodeId, element.getAsJsonObject()));
-                    }
+                    options.add(parseChoiceSpec(sourceDescription + "#" + nodeId, element.getAsJsonObject()));
                 }
+            } else if (json.has("options")) {
+                GsonHelper.getAsJsonArray(json, "options").forEach(element -> options.add(DialogueOption.fromJson(sourceDescription, element.getAsJsonObject())));
             }
-            List<JsonObject> conditions = readObjectArray(json, "conditions");
-            List<DialogueAction> completionActions = JsonDataUtil.readActions(sourceDescription + "#" + nodeId, json, "completionActions");
+            List<JsonObject> conditions = parseConditions(json);
 
             return new DialogueSpecNode(
                     nodeId,
                     title,
-                    List.copyOf(contents),
-                    keepAtBottom,
+                    List.copyOf(lines),
                     triggerVfx,
                     nextNodeId,
-                    autoTrigger,
+                    requiredQuestId,
                     presentationMode,
                     List.copyOf(options),
-                    List.copyOf(conditions),
-                    List.copyOf(completionActions)
+                    List.copyOf(conditions)
             );
         }
 
@@ -197,11 +149,12 @@ public record DialogueSpec(
                     if (action.type() == DialogueActionType.OPEN_NODE && localNodeIds.contains(targetId)) {
                         targetId = scopeNodeId(dialogueId, targetId);
                     }
-                    rewrittenActions.add(new DialogueAction(action.type(), targetId, action.count()));
+                    rewrittenActions.add(new DialogueAction(action.type(), targetId));
                 }
                 rewrittenOptions.add(new DialogueOption(
                         option.optionId(),
                         option.label(),
+                        option.requiredQuestId(),
                         List.copyOf(rewrittenActions),
                         option.conditions()
                 ));
@@ -210,29 +163,159 @@ public record DialogueSpec(
             String rewrittenNextNodeId = localNodeIds.contains(this.nextNodeId)
                     ? scopeNodeId(dialogueId, this.nextNodeId)
                     : this.nextNodeId;
-            List<DialogueAction> rewrittenCompletionActions = new ArrayList<>();
-            for (DialogueAction action : this.completionActions) {
-                String targetId = action.targetId();
-                if (action.type() == DialogueActionType.OPEN_NODE && localNodeIds.contains(targetId)) {
-                    targetId = scopeNodeId(dialogueId, targetId);
-                }
-                rewrittenCompletionActions.add(new DialogueAction(action.type(), targetId, action.count()));
-            }
 
             return new DialogueNode(
                     scopeNodeId(dialogueId, this.nodeId),
                     this.title.isBlank() ? defaultNpcName : this.title,
-                    this.contents,
+                    this.lines,
                     this.triggerVfx,
+                    "",
                     rewrittenNextNodeId,
-                    this.autoTrigger,
+                    this.requiredQuestId,
                     this.presentationMode,
                     List.copyOf(rewrittenOptions),
-                    this.conditions,
-                    List.copyOf(rewrittenCompletionActions)
+                    this.conditions
             );
         }
 
+        private static DialogueOption parseChoiceSpec(@Nonnull String sourceDescription, @Nonnull JsonObject json) {
+            String optionId = sanitize(GsonHelper.getAsString(json, "choiceId", ""));
+            String label = parseText(json.get("text"));
+            String nextNodeId = sanitize(GsonHelper.getAsString(json, "nextNodeId", ""));
+            if (optionId.isBlank()) {
+                throw new IllegalArgumentException("Dialogue spec choice id is blank: " + sourceDescription);
+            }
+            if (label.isBlank()) {
+                throw new IllegalArgumentException("Dialogue spec choice text is blank: " + sourceDescription);
+            }
+
+            List<DialogueAction> actions = new ArrayList<>();
+            if (json.has("actions")) {
+                for (JsonElement element : GsonHelper.getAsJsonArray(json, "actions")) {
+                    DialogueAction action = parseActionSpec(element.getAsJsonObject());
+                    if (action != null) {
+                        actions.add(action);
+                    }
+                }
+            }
+            if (!nextNodeId.isBlank()) {
+                actions.add(new DialogueAction(DialogueActionType.OPEN_NODE, nextNodeId));
+            }
+            if (actions.isEmpty()) {
+                actions.add(new DialogueAction(DialogueActionType.CLOSE_DIALOGUE, ""));
+            }
+
+            return new DialogueOption(optionId, label, "", List.copyOf(actions), List.copyOf(parseConditions(json)));
+        }
+
+        @Nullable
+        private static DialogueAction parseActionSpec(@Nonnull JsonObject json) {
+            String rawType = sanitize(GsonHelper.getAsString(json, "type", ""));
+            if (rawType.isBlank()) {
+                return null;
+            }
+
+            return switch (rawType) {
+                case "close", "close_dialogue" -> new DialogueAction(DialogueActionType.CLOSE_DIALOGUE, "");
+                case "open_shop", "open_trade" -> new DialogueAction(
+                        DialogueActionType.OPEN_SHOP,
+                        firstNonBlank(
+                                sanitize(GsonHelper.getAsString(json, "shopId", "")),
+                                sanitize(GsonHelper.getAsString(json, "targetId", ""))
+                        )
+                );
+                case "open_node" -> new DialogueAction(
+                        DialogueActionType.OPEN_NODE,
+                        firstNonBlank(
+                                sanitize(GsonHelper.getAsString(json, "nodeId", "")),
+                                sanitize(GsonHelper.getAsString(json, "targetId", ""))
+                        )
+                );
+                case "complete_quest" -> new DialogueAction(
+                        DialogueActionType.COMPLETE_QUEST,
+                        firstNonBlank(
+                                sanitize(GsonHelper.getAsString(json, "questId", "")),
+                                sanitize(GsonHelper.getAsString(json, "targetId", ""))
+                        )
+                );
+                case "complete_objective" -> new DialogueAction(
+                        DialogueActionType.COMPLETE_OBJECTIVE,
+                        DialogueAction.encodeQuestObjectiveTarget(
+                                sanitize(GsonHelper.getAsString(json, "questId", "")),
+                                sanitize(GsonHelper.getAsString(json, "objectiveId", ""))
+                        )
+                );
+                case "start_quest" -> new DialogueAction(
+                        DialogueActionType.START_QUEST,
+                        firstNonBlank(
+                                sanitize(GsonHelper.getAsString(json, "questId", "")),
+                                sanitize(GsonHelper.getAsString(json, "targetId", ""))
+                        )
+                );
+                case "set_quest_phase" -> new DialogueAction(
+                        DialogueActionType.SET_QUEST_PHASE,
+                        DialogueAction.encodeQuestPhaseTarget(
+                                sanitize(GsonHelper.getAsString(json, "questId", "")),
+                                sanitize(GsonHelper.getAsString(json, "phaseId", ""))
+                        )
+                );
+                case "set_flag" -> new DialogueAction(
+                        DialogueActionType.SET_FLAG,
+                        firstNonBlank(
+                                sanitize(GsonHelper.getAsString(json, "flagName", "")),
+                                firstNonBlank(
+                                        sanitize(GsonHelper.getAsString(json, "flag", "")),
+                                        sanitize(GsonHelper.getAsString(json, "targetId", ""))
+                                )
+                        )
+                );
+                default -> null;
+            };
+        }
     }
 
+    @Nonnull
+    private static List<JsonObject> parseConditions(@Nonnull JsonObject json) {
+        List<JsonObject> conditions = new ArrayList<>();
+        if (!json.has("conditions")) {
+            return conditions;
+        }
+
+        for (JsonElement element : GsonHelper.getAsJsonArray(json, "conditions")) {
+            if (element.isJsonObject()) {
+                conditions.add(element.getAsJsonObject().deepCopy());
+            }
+        }
+        return conditions;
+    }
+
+    @Nonnull
+    private static String parseText(JsonElement element) {
+        if (element == null || element.isJsonNull()) {
+            return "";
+        }
+        if (element.isJsonPrimitive()) {
+            return sanitize(element.getAsString());
+        }
+        if (!element.isJsonObject()) {
+            return "";
+        }
+
+        JsonObject object = element.getAsJsonObject();
+        String literal = sanitize(GsonHelper.getAsString(object, "value", ""));
+        if (!literal.isBlank()) {
+            return literal;
+        }
+        return sanitize(GsonHelper.getAsString(object, "key", ""));
+    }
+
+    @Nonnull
+    private static String firstNonBlank(@Nonnull String first, @Nonnull String second) {
+        return first.isBlank() ? second : first;
+    }
+
+    @Nonnull
+    private static String sanitize(String value) {
+        return value == null ? "" : value.trim();
+    }
 }

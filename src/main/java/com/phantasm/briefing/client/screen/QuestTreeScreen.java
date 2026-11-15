@@ -264,6 +264,19 @@ public final class QuestTreeScreen extends PixelGridScreen {
         }
     }
 
+    private void renderLegend(GuiGraphics guiGraphics, Font font, int x, int y) {
+        drawLegendItem(guiGraphics, font, x, y, 0xE0BC63, "可接");
+        drawLegendItem(guiGraphics, font, x + 54, y, 0x8FC8FF, "进行中");
+        drawLegendItem(guiGraphics, font, x + 128, y, 0x9CE7B2, "可交");
+        drawLegendItem(guiGraphics, font, x + 182, y, 0x778AA3, "已完成");
+        drawLegendItem(guiGraphics, font, x + 246, y, 0x5A6170, "未解锁");
+    }
+
+    private void drawLegendItem(GuiGraphics guiGraphics, Font font, int x, int y, int color, String text) {
+        guiGraphics.fill(x, y + 4, x + 10, y + 10, color);
+        guiGraphics.drawString(font, text, x + 14, y + 1, 0xD6ECFF, true);
+    }
+
     private void renderDetailPanel(GuiGraphics guiGraphics, Font font, Layout layout, QuestTreeNodeEntry node) {
         int left = layout.detailX();
         int top = layout.detailY();

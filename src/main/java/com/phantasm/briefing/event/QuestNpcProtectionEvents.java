@@ -1,11 +1,8 @@
 package com.phantasm.briefing.event;
 
 import com.phantasm.briefing.api.IQuestNPC;
-import com.phantasm.briefing.data.NpcBindingDataManager;
 import com.phantasm.briefing.util.QuestNpcHelper;
-import com.phantasm.briefing.util.EntitySourceUtil;
-import com.phantasm.briefing.service.DialogueFlowCoordinator;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.npc.Villager;
@@ -20,24 +17,9 @@ public final class QuestNpcProtectionEvents {
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onLivingHurt(LivingHurtEvent event) {
-        LivingEntity target = event.getEntity();
-        if (!QuestNpcHelper.isQuestNPC(target)) {
-            return;
+        if (QuestNpcHelper.isQuestNPC(event.getEntity())) {
+            event.setCanceled(true);
         }
-
-        ServerPlayer attacker = EntitySourceUtil.resolveServerPlayer(event.getSource().getEntity());
-        if (attacker != null) {
-            String questNodeId = QuestNpcHelper.resolveQuestNodeId(target);
-            if (!questNodeId.isBlank()) {
-                DialogueFlowCoordinator.openTriggeredNodeForPlayer(
-                        attacker,
-                        questNodeId,
-                        target,
-                        "player_attack"
-                );
-            }
-        }
-        event.setCanceled(true);
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -51,11 +33,6 @@ public final class QuestNpcProtectionEvents {
     public void onLivingTick(LivingEvent.LivingTickEvent event) {
         LivingEntity entity = event.getEntity();
         if (entity instanceof IQuestNPC) {
-            return;
-        }
-
-        if (!QuestNpcHelper.hasDirectQuestNpcMarker(entity)
-                && !NpcBindingDataManager.getInstance().mayMatchEntityType(entity)) {
             return;
         }
 
@@ -78,6 +55,5 @@ public final class QuestNpcProtectionEvents {
             mob.setTarget(null);
         }
     }
-
 
 }

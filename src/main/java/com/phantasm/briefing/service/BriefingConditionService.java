@@ -2,19 +2,16 @@ package com.phantasm.briefing.service;
 
 import com.google.gson.JsonObject;
 import com.phantasm.briefing.PhantasmBriefing;
-import com.phantasm.briefing.integration.FTBIntegrationHelper;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.npc.Villager;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public final class BriefingConditionService {
     public static final String CURRENT_NAMESPACE = "phantasmbriefing:";
-    private static final ThreadLocal<Set<String>> ACTIVE_OBJECTIVE_GUARD = ThreadLocal.withInitial(HashSet::new);
+    public static final String LEGACY_NAMESPACE = "chronicle_engine:";
 
     private BriefingConditionService() {
     }
@@ -38,45 +35,34 @@ public final class BriefingConditionService {
         return switch (type) {
             case CURRENT_NAMESPACE + "always" -> true;
             case CURRENT_NAMESPACE + "has_flag" ->
-                    PlayerFlagService.hasFlag(player, readString(condition, "flag", ""));
-            case CURRENT_NAMESPACE + "pb_quest_accepted" ->
+                    PlayerFlagService.hasFlag(player, firstNonBlank(
+                            readString(condition, "flag", ""),
+                            readString(condition, "flagName", "")
+                    ));
+            case CURRENT_NAMESPACE + "quest_accepted" ->
                     QuestRuntimeService.isQuestActive(player, readString(condition, "questId", ""));
-            case CURRENT_NAMESPACE + "pb_quest_available" ->
+            case CURRENT_NAMESPACE + "quest_available" ->
                     QuestRuntimeService.isQuestAvailable(player, readString(condition, "questId", ""));
-            case CURRENT_NAMESPACE + "pb_quest_ready_to_turn_in" ->
+            case CURRENT_NAMESPACE + "quest_ready_to_turn_in" ->
                     QuestRuntimeService.isQuestReadyToTurnIn(player, readString(condition, "questId", ""));
-            case CURRENT_NAMESPACE + "pb_quest_completed" ->
-                    BriefingPlayerData.isQuestCompleted(player, readString(condition, "questId", ""));
-            case CURRENT_NAMESPACE + "pb_quest_not_started" -> {
+            case CURRENT_NAMESPACE + "quest_completed" ->
+                    QuestRuntimeService.isQuestCompleted(player, readString(condition, "questId", ""));
+            case CURRENT_NAMESPACE + "quest_not_started" -> {
                 String questId = readString(condition, "questId", "");
                 yield !QuestRuntimeService.isQuestActive(player, questId)
-                        && !BriefingPlayerData.isQuestCompleted(player, questId);
+                        && !QuestRuntimeService.isQuestCompleted(player, questId);
             }
-            case CURRENT_NAMESPACE + "pb_quest_phase" -> {
+            case CURRENT_NAMESPACE + "quest_phase" -> {
                 String questId = readString(condition, "questId", "");
                 String phaseId = readString(condition, "phaseId", "");
-                yield QuestRuntimeService.isPhaseActive(player, questId, phaseId);
+                yield QuestRuntimeService.isQuestActive(player, questId)
+                        && phaseId.equals(QuestRuntimeService.phase(player, questId));
             }
-            case CURRENT_NAMESPACE + "pb_quest_phase_completed" -> {
-                String questId = readString(condition, "questId", "");
-                String phaseId = readString(condition, "phaseId", "");
-                yield BriefingPlayerData.isPhaseCompleted(player, questId, phaseId);
-            }
-            case CURRENT_NAMESPACE + "pb_quest_objective_active" -> {
-                String questId = readString(condition, "questId", "");
-                String phaseId = readString(condition, "phaseId", "");
-                String objectiveId = readString(condition, "objectiveId", "");
-                yield testObjectiveActive(player, questId, phaseId, objectiveId);
-            }
-            case CURRENT_NAMESPACE + "pb_quest_objective_completed" -> {
+            case CURRENT_NAMESPACE + "quest_objective_completed" -> {
                 String questId = readString(condition, "questId", "");
                 String objectiveId = readString(condition, "objectiveId", "");
                 yield QuestRuntimeService.isObjectiveCompleted(player, questId, objectiveId);
             }
-            case CURRENT_NAMESPACE + "ftb_quest_completed" ->
-                    FTBIntegrationHelper.isQuestCompletedCached(player, readString(condition, "questId", ""));
-            case CURRENT_NAMESPACE + "ftb_quest_not_completed" ->
-                    !FTBIntegrationHelper.isQuestCompletedCached(player, readString(condition, "questId", ""));
             case CURRENT_NAMESPACE + "and" -> all(player, entity, readObjects(condition, "conditions"));
             case CURRENT_NAMESPACE + "or" -> any(player, entity, readObjects(condition, "conditions"));
             case CURRENT_NAMESPACE + "not" -> !test(player, entity, readObject(condition, "inner"));
@@ -89,58 +75,14 @@ public final class BriefingConditionService {
         };
     }
 
-    public static void collectFtbQuestIds(List<JsonObject> conditions, Set<String> destination) {
-        if (conditions == null || conditions.isEmpty() || destination == null) {
-            return;
-        }
-        for (JsonObject condition : conditions) {
-            if (condition == null || condition.entrySet().isEmpty()) {
-                continue;
-            }
-            String type = normalizeConditionType(readString(condition, "condition", CURRENT_NAMESPACE + "always"));
-            if (type.equals(CURRENT_NAMESPACE + "ftb_quest_completed")
-                    || type.equals(CURRENT_NAMESPACE + "ftb_quest_not_completed")) {
-                String questId = readString(condition, "questId", "").trim();
-                if (!questId.isBlank()) {
-                    destination.add(questId);
-                }
-                continue;
-            }
-            if (type.equals(CURRENT_NAMESPACE + "and") || type.equals(CURRENT_NAMESPACE + "or")) {
-                collectFtbQuestIds(readObjects(condition, "conditions"), destination);
-                continue;
-            }
-            if (type.equals(CURRENT_NAMESPACE + "not")) {
-                collectFtbQuestIds(List.of(readObject(condition, "inner")), destination);
-            }
-        }
-    }
-
     public static String normalizeConditionType(String type) {
         if (type == null || type.isBlank()) {
             return CURRENT_NAMESPACE + "always";
         }
-        return type.trim().toLowerCase(java.util.Locale.ROOT).replace('-', '_');
-    }
-
-
-    private static boolean testObjectiveActive(ServerPlayer player, String questId, String phaseId, String objectiveId) {
-        if (player == null || questId.isBlank() || phaseId.isBlank() || objectiveId.isBlank()) {
-            return false;
+        if (type.startsWith(LEGACY_NAMESPACE)) {
+            return CURRENT_NAMESPACE + type.substring(LEGACY_NAMESPACE.length());
         }
-        String key = player.getUUID() + "|" + questId + "|" + phaseId + "|" + objectiveId;
-        Set<String> guard = ACTIVE_OBJECTIVE_GUARD.get();
-        if (!guard.add(key)) {
-            return false;
-        }
-        try {
-            return QuestRuntimeService.isObjectiveActive(player, questId, phaseId, objectiveId);
-        } finally {
-            guard.remove(key);
-            if (guard.isEmpty()) {
-                ACTIVE_OBJECTIVE_GUARD.remove();
-            }
-        }
+        return type;
     }
 
     private static boolean any(ServerPlayer player, Entity entity, List<JsonObject> conditions) {
@@ -196,4 +138,7 @@ public final class BriefingConditionService {
         return owner.get(key).getAsString();
     }
 
+    private static String firstNonBlank(String first, String second) {
+        return first == null || first.isBlank() ? second : first;
+    }
 }

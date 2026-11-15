@@ -18,9 +18,6 @@ import java.util.Optional;
 public final class DialogueFocusClient {
     private static final double MAX_FOCUS_DISTANCE = 6.0D;
     private static final double MAX_FOCUS_DISTANCE_SQUARED = MAX_FOCUS_DISTANCE * MAX_FOCUS_DISTANCE;
-    // 与 DialogueFlowCoordinator 的有效会话距离保持一致；不改变首次对话的 6 格校验。
-    private static final double MAX_ACTIVE_DIALOGUE_DISTANCE = 8.0D;
-    private static final double MAX_ACTIVE_DIALOGUE_DISTANCE_SQUARED = MAX_ACTIVE_DIALOGUE_DISTANCE * MAX_ACTIVE_DIALOGUE_DISTANCE;
     private static final double TARGET_PADDING = 0.30D;
 
     private DialogueFocusClient() {
@@ -47,25 +44,6 @@ public final class DialogueFocusClient {
             return null;
         }
         return minecraft.level.getEntity(session.getSpeakerEntityId());
-    }
-
-    /**
-     * 对话开始前仍由准星命中 NPC 来触发；一旦会话已经建立，镜头可以自由移动。
-     * 这样第一人称查看较高的图片气泡时不会因为准星离开 NPC 而让整段对话消失。
-     * 活跃会话仍要求说话者存在、存活、处于同一世界且没有离玩家过远。
-     */
-    public static boolean canPresentActiveDialogue(Minecraft minecraft, ClientDialogueSession session) {
-        if (!usesGazeBubble(session)) {
-            return true;
-        }
-        if (minecraft == null || minecraft.player == null || minecraft.level == null) {
-            return false;
-        }
-
-        Entity speaker = getSpeaker(minecraft, session);
-        LocalPlayer player = minecraft.player;
-        return speaker != null && speaker.isAlive() && speaker.level() == player.level()
-                && player.distanceToSqr(speaker) <= MAX_ACTIVE_DIALOGUE_DISTANCE_SQUARED;
     }
 
     public static boolean isFocusedOnSpeaker(Minecraft minecraft, ClientDialogueSession session) {

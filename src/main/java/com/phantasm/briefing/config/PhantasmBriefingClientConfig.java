@@ -6,13 +6,15 @@ public final class PhantasmBriefingClientConfig {
     public static final ForgeConfigSpec SPEC;
 
     private static final ForgeConfigSpec.BooleanValue QUEST_TRACKING_ENABLED;
-    private static final ForgeConfigSpec.BooleanValue QUEST_TRACKER_SHOW_OBJECTIVE_TRACKING_TEXT;
+    private static final ForgeConfigSpec.BooleanValue QUEST_TRACKER_PANEL_ENABLED;
+    private static final ForgeConfigSpec.BooleanValue QUEST_TRACKER_SHOW_ALL_OBJECTIVES;
     private static final ForgeConfigSpec.BooleanValue QUEST_TRACKER_ANCHOR_RIGHT;
     private static final ForgeConfigSpec.BooleanValue WORLD_MARKER_ENABLED;
     private static final ForgeConfigSpec.BooleanValue NPC_INDICATOR_ENABLED;
     private static final ForgeConfigSpec.BooleanValue MARKER_DISTANCE_ENABLED;
     private static final ForgeConfigSpec.EnumValue<DialogueHudStyle> DIALOGUE_HUD_STYLE;
     private static final ForgeConfigSpec.BooleanValue DIALOGUE_GAZE_BUBBLE_STYLE;
+    private static final ForgeConfigSpec.BooleanValue CINEMATIC_ESC_SKIPS_NODE;
 
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -21,9 +23,12 @@ public final class PhantasmBriefingClientConfig {
         QUEST_TRACKING_ENABLED = builder
                 .comment("任务追踪总开关；关闭后隐藏任务面板、世界目标指引与 NPC 任务标记。")
                 .define("enabled", true);
-        QUEST_TRACKER_SHOW_OBJECTIVE_TRACKING_TEXT = builder
-                .comment("是否显示阶段目标追踪文字；目标名称始终显示。")
-                .define("show_objective_tracking_text", false);
+        QUEST_TRACKER_PANEL_ENABLED = builder
+                .comment("是否在 HUD 上显示当前追踪任务面板。")
+                .define("panel_enabled", true);
+        QUEST_TRACKER_SHOW_ALL_OBJECTIVES = builder
+                .comment("是否在任务追踪面板中显示当前任务的全部目标；关闭时只显示第一条。")
+                .define("show_all_objectives", false);
         QUEST_TRACKER_ANCHOR_RIGHT = builder
                 .comment("任务追踪面板位置：false = 左上角；true = 右上角。")
                 .define("anchor_right", false);
@@ -47,6 +52,12 @@ public final class PhantasmBriefingClientConfig {
                 .define("gaze_bubble_style", false);
         builder.pop();
 
+        builder.push("cinematic");
+        CINEMATIC_ESC_SKIPS_NODE = builder
+                .comment("当处于演出模式时，按下 ESC 的行为：false = 放弃退出（不推进节点，不发奖励）；true = 跳过当前节点并推进到 nextNode。")
+                .define("esc_skips_node", false);
+        builder.pop();
+
         SPEC = builder.build();
     }
 
@@ -57,8 +68,12 @@ public final class PhantasmBriefingClientConfig {
         return QUEST_TRACKING_ENABLED.get();
     }
 
-    public static boolean questTrackerShowObjectiveTrackingText() {
-        return QUEST_TRACKER_SHOW_OBJECTIVE_TRACKING_TEXT.get();
+    public static boolean questTrackerPanelEnabled() {
+        return QUEST_TRACKER_PANEL_ENABLED.get();
+    }
+
+    public static boolean questTrackerShowAllObjectives() {
+        return QUEST_TRACKER_SHOW_ALL_OBJECTIVES.get();
     }
 
     public static boolean questTrackerAnchorRight() {
@@ -85,23 +100,31 @@ public final class PhantasmBriefingClientConfig {
         return configuredStyle;
     }
 
+    public static boolean cinematicEscSkipsNode() {
+        return CINEMATIC_ESC_SKIPS_NODE.get();
+    }
+
     public static void save(
             boolean questTrackingEnabled,
-            boolean questTrackerShowObjectiveTrackingText,
+            boolean questTrackerPanelEnabled,
+            boolean questTrackerShowAllObjectives,
             boolean questTrackerAnchorRight,
             boolean worldMarkerEnabled,
             boolean npcIndicatorEnabled,
             boolean markerDistanceEnabled,
-            DialogueHudStyle dialogueHudStyle
+            DialogueHudStyle dialogueHudStyle,
+            boolean cinematicEscSkipsNode
     ) {
         QUEST_TRACKING_ENABLED.set(questTrackingEnabled);
-        QUEST_TRACKER_SHOW_OBJECTIVE_TRACKING_TEXT.set(questTrackerShowObjectiveTrackingText);
+        QUEST_TRACKER_PANEL_ENABLED.set(questTrackerPanelEnabled);
+        QUEST_TRACKER_SHOW_ALL_OBJECTIVES.set(questTrackerShowAllObjectives);
         QUEST_TRACKER_ANCHOR_RIGHT.set(questTrackerAnchorRight);
         WORLD_MARKER_ENABLED.set(worldMarkerEnabled);
         NPC_INDICATOR_ENABLED.set(npcIndicatorEnabled);
         MARKER_DISTANCE_ENABLED.set(markerDistanceEnabled);
         DIALOGUE_HUD_STYLE.set(dialogueHudStyle);
         DIALOGUE_GAZE_BUBBLE_STYLE.set(false);
+        CINEMATIC_ESC_SKIPS_NODE.set(cinematicEscSkipsNode);
         SPEC.save();
     }
 }

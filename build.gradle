@@ -44,7 +44,8 @@ minecraft {
             }
         }
 
-        client {}
+        client {
+        }
 
         server {
             args '--nogui'
@@ -60,17 +61,11 @@ minecraft {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
-    maven { url = 'https://maven.ftb.dev/releases' }
-    maven { url = 'https://maven.architectury.dev/' }
 }
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
-    compileOnly fg.deobf('dev.architectury:architectury-forge:9.2.14')
-    compileOnly fg.deobf('dev.ftb.mods:ftb-library-forge:2001.2.12')
-    compileOnly fg.deobf('dev.ftb.mods:ftb-teams-forge:2001.3.2')
-    compileOnly fg.deobf('dev.ftb.mods:ftb-quests-forge:2001.4.22')
 }
 
 mixin {
@@ -79,9 +74,7 @@ mixin {
 }
 
 tasks.named('processResources', ProcessResources).configure {
-    from('LICENSE') {
-        into 'META-INF'
-    }
+    from('LICENSE') { into 'META-INF' }
 
     var replaceProperties = [
             minecraft_version: minecraft_version, minecraft_version_range: minecraft_version_range,
@@ -129,14 +122,4 @@ publishing {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-}
-
-// Use this task when creating the mod that will be copied into a modpack.
-// Rebuild the mod from clean sources and resources.
-tasks.register('releaseMod') {
-    dependsOn 'clean', 'build'
-}
-
-tasks.named('build').configure {
-    mustRunAfter 'clean'
 }

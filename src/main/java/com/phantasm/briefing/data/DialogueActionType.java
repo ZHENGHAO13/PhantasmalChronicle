@@ -11,12 +11,8 @@ public enum DialogueActionType {
     SET_QUEST_PHASE,
     OPEN_NODE,
     OPEN_SHOP,
-    GIVE_ITEM,
-    DELIVER_ITEM,
     SET_FLAG,
-    CLOSE_DIALOGUE,
-    COMPLETE_FTB_QUEST,
-    REMOVE_CONTEXT_NPC;
+    CLOSE_DIALOGUE;
 
     public static DialogueActionType fromSerializedName(@Nullable String serializedName) {
         if (serializedName == null || serializedName.isBlank()) {

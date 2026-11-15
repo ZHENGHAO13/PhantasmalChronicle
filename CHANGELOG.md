@@ -1,5 +1,13 @@
 # Changelog / 版本变更
 
+## alpha-0.1.0+build.2 — 2026-11-15
+
+- Preserves the older local source snapshot on an isolated branch; this is not an upgrade to main.
+- Includes the snapshot's quest, dialogue, NPC, wallet, shop and optional integration functionality with standalone Gradle build instructions.
+- Removes local authoring tools, their HTTP bridge, the test-dialogue command/packet and internal test launch settings from this distribution.
+- Uses network protocol 16; clients and servers must use the same branch version.
+- Retains the existing GPL-3.0-only license and third-party notices.
+- Verified standalone clean build with JDK 17 / Gradle 8.8, JSON parsing, JAR version/license metadata and distribution scope. Gameplay and multiplayer acceptance remain pending.
 ## alpha-0.1.0+build.1 — 2026-10-07
 
 ### 中文

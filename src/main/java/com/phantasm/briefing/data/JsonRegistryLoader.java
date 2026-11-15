@@ -42,7 +42,6 @@ final class JsonRegistryLoader {
             Function<T, String> idResolver,
             Logger logger
     ) {
-        logger.info("[PhantasmBriefing] {} external config directory: {}", typeName, externalDirectory.toAbsolutePath().normalize());
         Map<String, T> values = new LinkedHashMap<>();
         int datapackCount = loadDatapack(resources, typeName, decoder, idResolver, values, logger);
         ExternalCounts externalCounts = loadExternal(
@@ -53,9 +52,6 @@ final class JsonRegistryLoader {
                 values,
                 logger
         );
-        logger.info("[PhantasmBriefing] {}: bundled={}, external scanned={}, imported={}, overrides={}, rejected={}, resolved total={}",
-                typeName, datapackCount, externalCounts.scanned(), externalCounts.added(),
-                externalCounts.overridden(), externalCounts.rejected(), values.size());
         return new Result<>(
                 Map.copyOf(values),
                 datapackCount,
@@ -80,13 +76,6 @@ final class JsonRegistryLoader {
         T direct = values.get(id);
         if (direct != null) {
             return Optional.of(direct);
-        }
-
-        if (!id.contains(":")) {
-            T namespaced = values.get(PhantasmBriefing.MOD_ID + ":" + id);
-            if (namespaced != null) {
-                return Optional.of(namespaced);
-            }
         }
 
         ResourceLocation resourceLocation = ResourceLocation.tryParse(id);
@@ -146,24 +135,19 @@ final class JsonRegistryLoader {
 
         int added = 0;
         int overridden = 0;
-        int scanned = 0;
-        int rejected = 0;
         try (Stream<Path> paths = Files.walk(directory)) {
             for (Path file : paths.filter(Files::isRegularFile).filter(JsonRegistryLoader::isJsonFile).sorted().toList()) {
-                scanned++;
                 LoadOutcome outcome = loadExternalFile(file, directory, typeName, decoder, idResolver, destination, logger);
                 if (outcome == LoadOutcome.ADDED) {
                     added++;
                 } else if (outcome == LoadOutcome.OVERRIDDEN) {
                     overridden++;
-                } else {
-                    rejected++;
                 }
             }
         } catch (IOException exception) {
             logger.error("[PhantasmBriefing] Failed to scan external {} directory {}: {}", typeName, directory, exception.getMessage());
         }
-        return new ExternalCounts(added, overridden, scanned, rejected);
+        return new ExternalCounts(added, overridden);
     }
 
     private static <T> LoadOutcome loadExternalFile(
@@ -211,8 +195,8 @@ final class JsonRegistryLoader {
     record Result<T>(Map<String, T> values, int datapackCount, int externalAdded, int externalOverrides) {
     }
 
-    private record ExternalCounts(int added, int overridden, int scanned, int rejected) {
-        private static final ExternalCounts EMPTY = new ExternalCounts(0, 0, 0, 0);
+    private record ExternalCounts(int added, int overridden) {
+        private static final ExternalCounts EMPTY = new ExternalCounts(0, 0);
     }
 
     private enum LoadOutcome {

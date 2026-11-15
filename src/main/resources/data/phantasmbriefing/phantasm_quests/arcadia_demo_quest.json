@@ -1,0 +1,127 @@
+{
+  "questId": "arcadia_demo_quest",
+  "title": "引导委托",
+  "description": "这是一条用于演示本模组独立任务状态的任务。",
+  "objectiveLines": [
+    "通过对话接取任务。",
+    "打开任务日志或任务追踪确认状态已切换为进行中。"
+  ],
+  "repeatable": false,
+  "initialPhaseId": "accepted",
+  "phases": [
+    {
+      "phaseId": "accepted",
+      "title": "接取委托",
+      "objectiveLines": [
+        "推进引导委托。"
+      ],
+      "targetNodeIds": [
+        "arcadia_demo_dialogue::root"
+      ],
+      "nextPhaseId": "ready_to_turn_in",
+      "objectives": [
+        {
+          "objectiveId": "experience_memory_echo",
+          "title": "体验记忆回响",
+          "objectiveLines": [
+            "回到引导员处继续对话，进入记忆回响。"
+          ],
+          "targetNodeIds": [
+            "arcadia_demo_dialogue::root"
+          ],
+          "hintType": "advance"
+        },
+        {
+          "objectiveId": "confirm_memory_trace",
+          "title": "确认回响稳定",
+          "objectiveLines": [
+            "再次与引导员交谈，确认回响已经稳定。"
+          ],
+          "targetNodeIds": [
+            "arcadia_demo_dialogue::root"
+          ],
+          "conditions": [
+            {
+              "condition": "phantasmbriefing:quest_objective_completed",
+              "questId": "arcadia_demo_quest",
+              "objectiveId": "experience_memory_echo"
+            }
+          ],
+          "actions": [
+            {
+              "type": "set_flag",
+              "flag": "arcadia_memory_trace_confirmed"
+            }
+          ],
+          "hintType": "advance"
+        }
+      ],
+      "hintType": "advance"
+    },
+    {
+      "phaseId": "ready_to_turn_in",
+      "title": "返回交付",
+      "objectiveLines": [
+        "准备交付当前委托。"
+      ],
+      "actions": [
+        {
+          "type": "set_flag",
+          "flag": "arcadia_ready_to_turn_in"
+        }
+      ],
+      "targetNodeIds": [
+        "arcadia_demo_dialogue::root"
+      ],
+      "completeQuestOnObjectivesCompleted": true,
+      "objectives": [
+        {
+          "objectiveId": "turn_in_to_guide",
+          "title": "向引导员汇报",
+          "objectiveLines": [
+            "返回引导员处交付当前委托。"
+          ],
+          "targetNodeIds": [
+            "arcadia_demo_dialogue::root"
+          ],
+          "conditions": [
+            {
+              "condition": "phantasmbriefing:has_flag",
+              "flag": "arcadia_memory_trace_confirmed"
+            },
+            {
+              "condition": "phantasmbriefing:has_flag",
+              "flag": "arcadia_ready_to_turn_in"
+            }
+          ],
+          "hintType": "complete"
+        }
+      ],
+      "hintType": "complete"
+    }
+  ],
+  "unlockConditions": [
+    {
+      "condition": "phantasmbriefing:always"
+    }
+  ],
+  "nextQuestIds": [
+    "arcadia_followup_quest"
+  ],
+  "flagsToSetOnAccept": [
+    "arcadia_demo_accepted"
+  ],
+  "acceptActions": [
+    {
+      "type": "set_flag",
+      "flag": "arcadia_demo_accept_actions_ran"
+    }
+  ],
+  "completeActions": [
+    {
+      "type": "set_flag",
+      "flag": "arcadia_demo_finished"
+    }
+  ],
+  "trackerTitle": "接受引导委托"
+}

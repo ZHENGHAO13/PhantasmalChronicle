@@ -587,6 +587,18 @@ public final class WalletShopScreen extends PixelGridScreen {
         guiGraphics.fill(x + width - 7, y + height - 10, x + width - 6, y + height - 6, color);
     }
 
+    private void renderCostStrip(GuiGraphics guiGraphics, Font font, WalletShopOfferEntry entry, int x, int y, int maxWidth) {
+        guiGraphics.drawString(font, "花费", x, y + 4, 0xA9D9FF, false);
+        int iconX = x + 30;
+        iconX = renderCostIcon(guiGraphics, font, entry.primaryCostItemId(), entry.primaryCostCount(), iconX, y);
+        if (!entry.secondaryCostItemId().isBlank() && entry.secondaryCostCount() > 0 && iconX < x + maxWidth - 20) {
+            guiGraphics.drawString(font, "+", iconX + 1, y + 5, 0xCFE7FF, false);
+            iconX = renderCostIcon(guiGraphics, font, entry.secondaryCostItemId(), entry.secondaryCostCount(), iconX + 12, y);
+        }
+        String summary = font.plainSubstrByWidth(entry.costSummary(), Math.max(20, x + maxWidth - iconX - 8));
+        guiGraphics.drawString(font, summary, iconX + 6, y + 4, 0xD7ECFF, false);
+    }
+
     private void renderCompactCostStrip(GuiGraphics guiGraphics, Font font, WalletShopOfferEntry entry, int x, int y, int maxWidth) {
         int iconX = x;
         iconX = renderCostIcon(guiGraphics, font, entry.primaryCostItemId(), entry.primaryCostCount(), iconX, y);

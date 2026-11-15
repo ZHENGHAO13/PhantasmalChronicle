@@ -6,9 +6,6 @@ import net.minecraft.util.GsonHelper;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
-import static com.phantasm.briefing.data.JsonDataUtil.sanitize;
-import static com.phantasm.briefing.data.JsonDataUtil.readText;
-
 public record QuestMarkerSpec(
         String label,
         String dimension,
@@ -18,7 +15,7 @@ public record QuestMarkerSpec(
 ) {
 
     public static QuestMarkerSpec fromJson(@Nonnull String sourceDescription, @Nonnull JsonObject json) {
-        String label = readText(json, "label");
+        String label = sanitize(GsonHelper.getAsString(json, "label", ""));
         String dimension = sanitize(GsonHelper.getAsString(json, "dimension", "minecraft:overworld"));
         String normalizedDimension = Objects.requireNonNull(dimension);
         if (ResourceLocation.tryParse(normalizedDimension) == null) {
@@ -32,5 +29,10 @@ public record QuestMarkerSpec(
                 GsonHelper.getAsDouble(json, "y", 64.0D),
                 GsonHelper.getAsDouble(json, "z")
         );
+    }
+
+    @Nonnull
+    private static String sanitize(String value) {
+        return value == null ? "" : value.trim();
     }
 }

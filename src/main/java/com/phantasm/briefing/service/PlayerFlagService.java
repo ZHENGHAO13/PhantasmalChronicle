@@ -1,6 +1,5 @@
 package com.phantasm.briefing.service;
 
-import com.phantasm.briefing.event.NpcStructureSpawnEvents;
 import net.minecraft.server.level.ServerPlayer;
 
 public final class PlayerFlagService {
@@ -13,7 +12,5 @@ public final class PlayerFlagService {
 
     public static void setFlag(ServerPlayer player, String flag) {
         BriefingPlayerData.setFlag(player, flag == null ? "" : flag.trim());
-        QuestRuntimeService.invalidateAutomaticObjectives(player);
-        NpcStructureSpawnEvents.invalidatePlayer(player);
     }
 }

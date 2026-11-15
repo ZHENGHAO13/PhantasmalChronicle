@@ -26,6 +26,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -69,10 +70,6 @@ public final class DialogueShopService {
         ACTIVE_SHOP_TERMINALS.computeIfPresent(player.getUUID(), (uuid, activeSession) ->
                 activeSession.sessionId().equals(shopId) ? null : activeSession
         );
-    }
-
-    public static void clear(ServerPlayer player) {
-        ACTIVE_SHOP_TERMINALS.remove(player.getUUID());
     }
 
     public static boolean purchaseWalletOffer(ServerPlayer player, String shopId, String entryId) {

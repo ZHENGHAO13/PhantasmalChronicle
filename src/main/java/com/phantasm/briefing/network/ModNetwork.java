@@ -1,24 +1,17 @@
 package com.phantasm.briefing.network;
 
 import com.phantasm.briefing.PhantasmBriefing;
-import com.phantasm.briefing.network.packet.CloseDialogueSessionS2CPacket;
-import com.phantasm.briefing.network.packet.AcceptQuestC2SPacket;
 import com.phantasm.briefing.network.packet.DialogueNodeFinishedC2SPacket;
 import com.phantasm.briefing.network.packet.DialogueOptionSelectedC2SPacket;
 import com.phantasm.briefing.network.packet.DialogueSessionAbortedC2SPacket;
 import com.phantasm.briefing.network.packet.CloseWalletShopC2SPacket;
-import com.phantasm.briefing.network.packet.CompleteManualReadObjectiveC2SPacket;
-import com.phantasm.briefing.network.packet.OpenQuestJournalC2SPacket;
 import com.phantasm.briefing.network.packet.OpenQuestJournalS2CPacket;
 import com.phantasm.briefing.network.packet.OpenQuestTreeS2CPacket;
 import com.phantasm.briefing.network.packet.OpenDialogueNodeS2CPacket;
 import com.phantasm.briefing.network.packet.OpenWalletScreenS2CPacket;
 import com.phantasm.briefing.network.packet.OpenWalletShopS2CPacket;
-import com.phantasm.briefing.network.packet.PreviewDialogueVoiceS2CPacket;
 import com.phantasm.briefing.network.packet.PurchaseWalletShopOfferC2SPacket;
-import com.phantasm.briefing.network.packet.RefreshQuestContentS2CPacket;
 import com.phantasm.briefing.network.packet.SetQuestTrackerHudVisibilityS2CPacket;
-import com.phantasm.briefing.network.packet.SetTrackedQuestC2SPacket;
 import com.phantasm.briefing.network.packet.SyncQuestHintTargetS2CPacket;
 import com.phantasm.briefing.network.packet.SyncQuestTrackerS2CPacket;
 import com.phantasm.briefing.network.packet.StartNpcDialogueC2SPacket;
@@ -28,7 +21,7 @@ import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 
 public final class ModNetwork {
-    private static final String PROTOCOL_VERSION = "15";
+    private static final String PROTOCOL_VERSION = "16";
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.ChannelBuilder
             .named(ResourceLocation.fromNamespaceAndPath(PhantasmBriefing.MOD_ID, "main"))
@@ -47,18 +40,6 @@ public final class ModNetwork {
                 .encoder(OpenDialogueNodeS2CPacket::encode)
                 .decoder(OpenDialogueNodeS2CPacket::decode)
                 .consumerMainThread(OpenDialogueNodeS2CPacket::handle)
-                .add();
-
-        CHANNEL.messageBuilder(CloseDialogueSessionS2CPacket.class, nextId(), NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(CloseDialogueSessionS2CPacket::encode)
-                .decoder(CloseDialogueSessionS2CPacket::decode)
-                .consumerMainThread(CloseDialogueSessionS2CPacket::handle)
-                .add();
-
-        CHANNEL.messageBuilder(PreviewDialogueVoiceS2CPacket.class, nextId(), NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(PreviewDialogueVoiceS2CPacket::encode)
-                .decoder(PreviewDialogueVoiceS2CPacket::decode)
-                .consumerMainThread(PreviewDialogueVoiceS2CPacket::handle)
                 .add();
 
         CHANNEL.messageBuilder(DialogueNodeFinishedC2SPacket.class, nextId(), NetworkDirection.PLAY_TO_SERVER)
@@ -83,36 +64,6 @@ public final class ModNetwork {
                 .encoder(OpenQuestJournalS2CPacket::encode)
                 .decoder(OpenQuestJournalS2CPacket::decode)
                 .consumerMainThread(OpenQuestJournalS2CPacket::handle)
-                .add();
-
-        CHANNEL.messageBuilder(RefreshQuestContentS2CPacket.class, nextId(), NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(RefreshQuestContentS2CPacket::encode)
-                .decoder(RefreshQuestContentS2CPacket::decode)
-                .consumerMainThread(RefreshQuestContentS2CPacket::handle)
-                .add();
-
-        CHANNEL.messageBuilder(OpenQuestJournalC2SPacket.class, nextId(), NetworkDirection.PLAY_TO_SERVER)
-                .encoder(OpenQuestJournalC2SPacket::encode)
-                .decoder(OpenQuestJournalC2SPacket::decode)
-                .consumerMainThread(OpenQuestJournalC2SPacket::handle)
-                .add();
-
-        CHANNEL.messageBuilder(AcceptQuestC2SPacket.class, nextId(), NetworkDirection.PLAY_TO_SERVER)
-                .encoder(AcceptQuestC2SPacket::encode)
-                .decoder(AcceptQuestC2SPacket::decode)
-                .consumerMainThread(AcceptQuestC2SPacket::handle)
-                .add();
-
-        CHANNEL.messageBuilder(SetTrackedQuestC2SPacket.class, nextId(), NetworkDirection.PLAY_TO_SERVER)
-                .encoder(SetTrackedQuestC2SPacket::encode)
-                .decoder(SetTrackedQuestC2SPacket::decode)
-                .consumerMainThread(SetTrackedQuestC2SPacket::handle)
-                .add();
-
-        CHANNEL.messageBuilder(CompleteManualReadObjectiveC2SPacket.class, nextId(), NetworkDirection.PLAY_TO_SERVER)
-                .encoder(CompleteManualReadObjectiveC2SPacket::encode)
-                .decoder(CompleteManualReadObjectiveC2SPacket::decode)
-                .consumerMainThread(CompleteManualReadObjectiveC2SPacket::handle)
                 .add();
 
         CHANNEL.messageBuilder(OpenQuestTreeS2CPacket.class, nextId(), NetworkDirection.PLAY_TO_CLIENT)

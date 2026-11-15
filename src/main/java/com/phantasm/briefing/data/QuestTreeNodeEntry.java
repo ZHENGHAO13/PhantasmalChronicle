@@ -4,6 +4,7 @@ import java.util.List;
 
 public record QuestTreeNodeEntry(
         String questId,
+        String treeId,
         String title,
         String description,
         QuestRuntimeStatus status,

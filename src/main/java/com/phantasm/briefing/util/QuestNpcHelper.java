@@ -3,7 +3,6 @@ package com.phantasm.briefing.util;
 import com.phantasm.briefing.api.IQuestNPC;
 import com.phantasm.briefing.capability.ModCapabilities;
 import com.phantasm.briefing.capability.QuestNpcData;
-import com.phantasm.briefing.data.DialogueDataManager;
 import com.phantasm.briefing.data.NpcBindingDataManager;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -14,34 +13,12 @@ import java.util.Optional;
 public final class QuestNpcHelper {
     private static final String TAG_NPC_IDENTITY = "PhantasmBriefingNpcIdentity";
     private static final String TAG_USE_NATIVE_AI = "PhantasmBriefingNpcUseNativeAi";
-    private static final String TAG_DIRECT_QUEST_NPC = "PhantasmBriefingDirectQuestNpc";
 
     private QuestNpcHelper() {
     }
 
     public static boolean isQuestNPC(@Nullable Entity entity) {
-        return !getNpcIdentity(entity).isBlank() || !resolveQuestNodeId(entity).isBlank();
-    }
-
-    public static boolean isPotentialQuestNpc(@Nullable Entity entity) {
-        if (entity instanceof IQuestNPC) {
-            return true;
-        }
-        return entity instanceof LivingEntity
-                && (hasDirectQuestNpcMarker(entity) || NpcBindingDataManager.getInstance().mayMatchEntityType(entity));
-    }
-
-    public static boolean hasDirectQuestNpcMarker(@Nullable Entity entity) {
-        return entity != null && entity.getPersistentData().getBoolean(TAG_DIRECT_QUEST_NPC);
-    }
-
-    public static void syncDirectQuestNpcMarker(LivingEntity entity) {
-        boolean directQuestNpc = getQuestNpcData(entity).map(QuestNpcData::isQuestNpc).orElse(false);
-        if (directQuestNpc) {
-            entity.getPersistentData().putBoolean(TAG_DIRECT_QUEST_NPC, true);
-        } else {
-            entity.getPersistentData().remove(TAG_DIRECT_QUEST_NPC);
-        }
+        return !resolveQuestNodeId(entity).isBlank();
     }
 
     public static boolean isCapabilityQuestNPC(@Nullable Entity entity) {
@@ -72,35 +49,17 @@ public final class QuestNpcHelper {
             return "";
         }
 
-        NpcBindingDataManager manager = NpcBindingDataManager.getInstance();
-        String directIdentity = entity.getPersistentData().getString(TAG_NPC_IDENTITY).trim();
-        if (!directIdentity.isBlank()) {
-            String boundNodeId = manager.getBinding(directIdentity)
-                    .map(binding -> sanitizeQuestNodeId(binding.questNodeId()))
-                    .orElse("");
-            if (!boundNodeId.isBlank()) {
-                return boundNodeId;
-            }
-        }
-
-        return manager.findBinding(entity)
+        return NpcBindingDataManager.getInstance()
+                .findBinding(entity)
                 .map(binding -> sanitizeQuestNodeId(binding.questNodeId()))
                 .orElse("");
-    }
-
-    /** Returns only the explicit identity written by PhantasmalChronicle, without rule matching. */
-    public static String getAssignedNpcIdentity(@Nullable Entity entity) {
-        if (entity == null) {
-            return "";
-        }
-        return entity.getPersistentData().getString(TAG_NPC_IDENTITY).trim();
     }
 
     public static String getNpcIdentity(@Nullable Entity entity) {
         if (entity == null) {
             return "";
         }
-        String directIdentity = getAssignedNpcIdentity(entity);
+        String directIdentity = entity.getPersistentData().getString(TAG_NPC_IDENTITY).trim();
         if (!directIdentity.isBlank()) {
             return directIdentity;
         }
@@ -146,7 +105,6 @@ public final class QuestNpcHelper {
         if (entity instanceof LivingEntity livingEntity) {
             return getQuestNpcData(livingEntity).map(data -> {
                 data.promote(livingEntity, normalizedId);
-                livingEntity.getPersistentData().putBoolean(TAG_DIRECT_QUEST_NPC, true);
                 return true;
             }).orElse(false);
         }
@@ -163,24 +121,8 @@ public final class QuestNpcHelper {
                 return false;
             }
             data.demote(livingEntity);
-            livingEntity.getPersistentData().remove(TAG_DIRECT_QUEST_NPC);
             return true;
         }).orElse(false);
-    }
-
-    /**
-     * Removes only a direct capability-based quest-node assignment when its dialogue node no
-     * longer exists. Managed spawned NPCs are handled by NpcStructureSpawnService instead.
-     */
-    public static boolean clearStaleDirectQuestNode(LivingEntity entity) {
-        if (entity == null || entity instanceof IQuestNPC || !getAssignedNpcIdentity(entity).isBlank()) {
-            return false;
-        }
-        String directNodeId = getQuestNodeId(entity);
-        if (directNodeId.isBlank() || DialogueDataManager.getInstance().getNode(directNodeId).isPresent()) {
-            return false;
-        }
-        return removeQuestNode(entity);
     }
 
     public static Optional<QuestNpcData> getQuestNpcData(LivingEntity entity) {

@@ -12,8 +12,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.AABB;
 
-
-import static com.phantasm.briefing.data.JsonDataUtil.sanitize;
+import java.util.Optional;
 
 public final class StructureSearchCompatService {
     private StructureSearchCompatService() {
@@ -28,27 +27,23 @@ public final class StructureSearchCompatService {
         int changed = 0;
         for (String questId : BriefingPlayerData.activeQuestIds(player)) {
             QuestSpec quest = com.phantasm.briefing.data.QuestDataManager.getInstance().getQuest(questId).orElse(null);
-            if (quest == null) {
+            QuestObjectiveSpec objective = QuestRuntimeService.currentObjective(player, quest).orElse(null);
+            if (quest == null || objective == null || !matchesStructureObjective(objective, normalizedStructureId)) {
                 continue;
             }
-            for (QuestObjectiveSpec objective : QuestRuntimeService.activeObjectives(player, quest)) {
-                if (!matchesStructureObjective(objective, normalizedStructureId)) {
-                    continue;
-                }
-                BriefingPlayerData.setRuntimeMarker(
-                        player,
-                        quest.questId(),
-                        objective.objectiveId(),
-                        normalizeMarkerForObjective(objective, marker)
-                );
-                changed++;
-            }
+            BriefingPlayerData.setRuntimeMarker(
+                    player,
+                    quest.questId(),
+                    objective.objectiveId(),
+                    normalizeMarkerForObjective(objective, marker)
+            );
+            changed++;
         }
 
         if (changed > 0) {
             QuestRuntimeService.evaluateAutomaticObjectives(player);
             QuestTrackerService.syncToClient(player);
-            QuestEntityHintService.requestSync(player);
+            QuestEntityHintService.syncToClient(player);
         }
         return changed;
     }
@@ -81,9 +76,9 @@ public final class StructureSearchCompatService {
 
     public static boolean spawnResolvedStructureNpc(ServerPlayer player, String questId, String objectiveId, String overrideQuestNodeId) {
         QuestSpec quest = com.phantasm.briefing.data.QuestDataManager.getInstance().getQuest(sanitize(questId)).orElse(null);
-        QuestPhaseSpec phase = QuestRuntimeService.activePhaseForObjective(player, quest, objectiveId).orElse(null);
+        QuestPhaseSpec phase = QuestRuntimeService.currentPhase(player, quest).orElse(null);
         QuestObjectiveSpec objective = phase == null ? null : phase.objective(objectiveId);
-        if (quest == null || objective == null || !QuestRuntimeService.isObjectiveActive(player, quest, objective)) {
+        if (quest == null || objective == null) {
             return false;
         }
 
@@ -129,23 +124,19 @@ public final class StructureSearchCompatService {
         int spawned = 0;
         for (String questId : BriefingPlayerData.activeQuestIds(player)) {
             QuestSpec quest = com.phantasm.briefing.data.QuestDataManager.getInstance().getQuest(questId).orElse(null);
-            if (quest == null) {
+            QuestObjectiveSpec objective = QuestRuntimeService.currentObjective(player, quest).orElse(null);
+            if (quest == null || objective == null || !matchesStructureObjective(objective, normalizedStructureId)) {
                 continue;
             }
-            for (QuestObjectiveSpec objective : QuestRuntimeService.activeObjectives(player, quest)) {
-                if (!matchesStructureObjective(objective, normalizedStructureId)) {
-                    continue;
-                }
-                String questNodeId = sanitize(overrideQuestNodeId);
-                if (questNodeId.isBlank()) {
-                    questNodeId = sanitize(objective.structureNodeId());
-                }
-                if (questNodeId.isBlank()) {
-                    continue;
-                }
-                if (spawnResolvedStructureNpc(player, quest.questId(), objective.objectiveId(), questNodeId)) {
-                    spawned++;
-                }
+            String questNodeId = sanitize(overrideQuestNodeId);
+            if (questNodeId.isBlank()) {
+                questNodeId = sanitize(objective.structureNodeId());
+            }
+            if (questNodeId.isBlank()) {
+                continue;
+            }
+            if (spawnResolvedStructureNpc(player, quest.questId(), objective.objectiveId(), questNodeId)) {
+                spawned++;
             }
         }
         return spawned;
@@ -214,4 +205,7 @@ public final class StructureSearchCompatService {
         return null;
     }
 
+    private static String sanitize(String value) {
+        return value == null ? "" : value.trim();
+    }
 }

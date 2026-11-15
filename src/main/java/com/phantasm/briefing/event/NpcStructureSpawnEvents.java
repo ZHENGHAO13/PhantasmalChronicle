@@ -17,13 +17,7 @@ public final class NpcStructureSpawnEvents {
     private static final int FALLBACK_SCAN_INTERVAL = 100;
     private static final int MAX_SCAN_ATTEMPTS = 4;
 
-    private static final Map<UUID, PlayerScanState> PLAYER_SCAN_STATES = new ConcurrentHashMap<>();
-
-    public static void invalidatePlayer(ServerPlayer player) {
-        if (player != null) {
-            PLAYER_SCAN_STATES.remove(player.getUUID());
-        }
-    }
+    private final Map<UUID, PlayerScanState> playerScanStates = new ConcurrentHashMap<>();
 
     @SubscribeEvent
     public void onPlayerTick(TickEvent.PlayerTickEvent event) {
@@ -40,7 +34,7 @@ public final class NpcStructureSpawnEvents {
         String dimension = player.level().dimension().location().toString();
         long revision = manager.getReloadRevision();
         long gameTime = player.serverLevel().getGameTime();
-        PlayerScanState previous = PLAYER_SCAN_STATES.get(player.getUUID());
+        PlayerScanState previous = this.playerScanStates.get(player.getUUID());
         boolean locationChanged = previous == null
                 || previous.chunkPosition() != chunkPos.toLong()
                 || previous.reloadRevision() != revision
@@ -61,7 +55,7 @@ public final class NpcStructureSpawnEvents {
                 chunkPos.z,
                 manager.getStructureSpawnFingerprint()
         )) {
-            PLAYER_SCAN_STATES.put(
+            this.playerScanStates.put(
                     player.getUUID(),
                     new PlayerScanState(dimension, chunkPos.toLong(), revision, gameTime, 0, true)
             );
@@ -73,7 +67,7 @@ public final class NpcStructureSpawnEvents {
                 player,
                 chunkPos
         );
-        PLAYER_SCAN_STATES.put(
+        this.playerScanStates.put(
                 player.getUUID(),
                 new PlayerScanState(
                         dimension,
@@ -88,7 +82,7 @@ public final class NpcStructureSpawnEvents {
 
     @SubscribeEvent
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        PLAYER_SCAN_STATES.remove(event.getEntity().getUUID());
+        this.playerScanStates.remove(event.getEntity().getUUID());
     }
 
     private record PlayerScanState(

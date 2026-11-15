@@ -1,28 +1,27 @@
 package com.phantasm.briefing.data;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
 import net.minecraft.util.GsonHelper;
 import javax.annotation.Nonnull;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.phantasm.briefing.data.JsonDataUtil.readActions;
-import static com.phantasm.briefing.data.JsonDataUtil.readObjectArray;
-import static com.phantasm.briefing.data.JsonDataUtil.readText;
-import static com.phantasm.briefing.data.JsonDataUtil.sanitize;
-
-/** A current-format player choice. Visibility is expressed only through conditions. */
 public record DialogueOption(
         String optionId,
         String label,
+        String requiredQuestId,
         List<DialogueAction> actions,
         List<JsonObject> conditions
 ) {
 
     public static DialogueOption fromJson(@Nonnull String sourceDescription, @Nonnull JsonObject json) {
         String optionId = sanitize(GsonHelper.getAsString(json, "optionId", ""));
-        String label = readText(json, "label");
+        String label = sanitize(GsonHelper.getAsString(json, "label", ""));
+        String requiredQuestId = sanitize(GsonHelper.getAsString(json, "requiredQuestId", ""));
+
         if (optionId.isBlank()) {
             throw new IllegalArgumentException("Dialogue option id is blank: " + sourceDescription);
         }
@@ -30,23 +29,27 @@ public record DialogueOption(
             throw new IllegalArgumentException("Dialogue option label is blank: " + sourceDescription);
         }
 
-        List<DialogueAction> actions = new ArrayList<>(readActions(
-                sourceDescription + "#" + optionId, json, "actions"
-        ));
-        // nextNodeId remains part of the current editor model because it is a concise navigation field.
-        String nextNodeId = sanitize(GsonHelper.getAsString(json, "nextNodeId", ""));
-        if (!nextNodeId.isBlank()) {
-            actions.add(new DialogueAction(DialogueActionType.OPEN_NODE, nextNodeId));
-        }
+        List<DialogueAction> actions = new ArrayList<>();
+        JsonArray actionArray = GsonHelper.getAsJsonArray(json, "actions");
+        actionArray.forEach(element -> actions.add(DialogueAction.fromJson(sourceDescription + "#" + optionId, element.getAsJsonObject())));
         if (actions.isEmpty()) {
-            actions.add(new DialogueAction(DialogueActionType.CLOSE_DIALOGUE, ""));
+            throw new IllegalArgumentException("Dialogue option actions are empty: " + sourceDescription);
         }
 
-        return new DialogueOption(
-                optionId,
-                label,
-                List.copyOf(actions),
-                readObjectArray(json, "conditions")
-        );
+        List<JsonObject> conditions = new ArrayList<>();
+        if (json.has("conditions")) {
+            for (JsonElement element : GsonHelper.getAsJsonArray(json, "conditions")) {
+                if (element.isJsonObject()) {
+                    conditions.add(element.getAsJsonObject().deepCopy());
+                }
+            }
+        }
+
+        return new DialogueOption(optionId, label, requiredQuestId, List.copyOf(actions), List.copyOf(conditions));
+    }
+
+    @Nonnull
+    private static String sanitize(String value) {
+        return value == null ? "" : value.trim();
     }
 }

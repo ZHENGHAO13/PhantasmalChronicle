@@ -5,7 +5,6 @@ import com.phantasm.briefing.config.PhantasmBriefingClientConfig;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
@@ -26,12 +25,14 @@ public final class PhantasmConfigScreen extends PixelGridScreen {
     private boolean dirty;
 
     private boolean questTrackingEnabled;
-    private boolean questTrackerShowObjectiveTrackingText;
+    private boolean questTrackerPanelEnabled;
+    private boolean questTrackerShowAllObjectives;
     private boolean questTrackerAnchorRight;
     private boolean worldMarkerEnabled;
     private boolean npcIndicatorEnabled;
     private boolean markerDistanceEnabled;
     private DialogueHudStyle dialogueHudStyle;
+    private boolean cinematicEscSkipsNode;
 
     public PhantasmConfigScreen(Screen parent) {
         super(Component.literal("幻象纪事设置"));
@@ -327,12 +328,14 @@ public final class PhantasmConfigScreen extends PixelGridScreen {
     private void saveAndClose() {
         PhantasmBriefingClientConfig.save(
                 this.questTrackingEnabled,
-                this.questTrackerShowObjectiveTrackingText,
+                this.questTrackerPanelEnabled,
+                this.questTrackerShowAllObjectives,
                 this.questTrackerAnchorRight,
                 this.worldMarkerEnabled,
                 this.npcIndicatorEnabled,
                 this.markerDistanceEnabled,
-                this.dialogueHudStyle
+                this.dialogueHudStyle,
+                this.cinematicEscSkipsNode
         );
         this.dirty = false;
         this.onClose();
@@ -340,23 +343,27 @@ public final class PhantasmConfigScreen extends PixelGridScreen {
 
     private void loadCurrentValues() {
         this.questTrackingEnabled = PhantasmBriefingClientConfig.questTrackingEnabled();
-        this.questTrackerShowObjectiveTrackingText = PhantasmBriefingClientConfig.questTrackerShowObjectiveTrackingText();
+        this.questTrackerPanelEnabled = PhantasmBriefingClientConfig.questTrackerPanelEnabled();
+        this.questTrackerShowAllObjectives = PhantasmBriefingClientConfig.questTrackerShowAllObjectives();
         this.questTrackerAnchorRight = PhantasmBriefingClientConfig.questTrackerAnchorRight();
         this.worldMarkerEnabled = PhantasmBriefingClientConfig.worldMarkerEnabled();
         this.npcIndicatorEnabled = PhantasmBriefingClientConfig.npcIndicatorEnabled();
         this.markerDistanceEnabled = PhantasmBriefingClientConfig.markerDistanceEnabled();
         this.dialogueHudStyle = PhantasmBriefingClientConfig.dialogueHudStyle();
+        this.cinematicEscSkipsNode = PhantasmBriefingClientConfig.cinematicEscSkipsNode();
         this.dirty = false;
     }
 
     private void restoreDefaults() {
         this.questTrackingEnabled = true;
-        this.questTrackerShowObjectiveTrackingText = false;
+        this.questTrackerPanelEnabled = true;
+        this.questTrackerShowAllObjectives = false;
         this.questTrackerAnchorRight = false;
         this.worldMarkerEnabled = true;
         this.npcIndicatorEnabled = true;
         this.markerDistanceEnabled = true;
         this.dialogueHudStyle = DialogueHudStyle.DIALOGUE_BAR;
+        this.cinematicEscSkipsNode = false;
         this.dirty = true;
     }
 
@@ -471,21 +478,17 @@ public final class PhantasmConfigScreen extends PixelGridScreen {
     }
 
     private enum ConfigOption {
-        TRACKING_ENABLED(
-                ConfigCategory.TRACKER,
-                I18n.get("config.phantasmbriefing.tracker.enabled"),
-                I18n.get("config.phantasmbriefing.tracker.enabled.description")
-        ) {
+        TRACKING_ENABLED(ConfigCategory.TRACKER, "任务追踪总开关", "关闭后隐藏任务面板和全部方向提示。") {
             @Override boolean value(PhantasmConfigScreen screen) { return screen.questTrackingEnabled; }
             @Override void toggle(PhantasmConfigScreen screen) { screen.questTrackingEnabled = !screen.questTrackingEnabled; }
         },
-        SHOW_OBJECTIVE_TRACKING_TEXT(
-                ConfigCategory.TRACKER,
-                I18n.get("config.phantasmbriefing.tracker.show_objective_tracking_text"),
-                I18n.get("config.phantasmbriefing.tracker.show_objective_tracking_text.description")
-        ) {
-            @Override boolean value(PhantasmConfigScreen screen) { return screen.questTrackerShowObjectiveTrackingText; }
-            @Override void toggle(PhantasmConfigScreen screen) { screen.questTrackerShowObjectiveTrackingText = !screen.questTrackerShowObjectiveTrackingText; }
+        PANEL_ENABLED(ConfigCategory.TRACKER, "任务追踪面板", "在屏幕角落显示当前任务与目标。") {
+            @Override boolean value(PhantasmConfigScreen screen) { return screen.questTrackerPanelEnabled; }
+            @Override void toggle(PhantasmConfigScreen screen) { screen.questTrackerPanelEnabled = !screen.questTrackerPanelEnabled; }
+        },
+        ALL_OBJECTIVES(ConfigCategory.TRACKER, "显示全部目标", "关闭时只显示当前任务的第一条目标。") {
+            @Override boolean value(PhantasmConfigScreen screen) { return screen.questTrackerShowAllObjectives; }
+            @Override void toggle(PhantasmConfigScreen screen) { screen.questTrackerShowAllObjectives = !screen.questTrackerShowAllObjectives; }
         },
         ANCHOR_RIGHT(ConfigCategory.TRACKER, "面板所在位置", "在左上角与右上角之间切换。") {
             @Override boolean value(PhantasmConfigScreen screen) { return screen.questTrackerAnchorRight; }
@@ -514,6 +517,11 @@ public final class PhantasmConfigScreen extends PixelGridScreen {
                     case MAID_WORLD_BUBBLE -> "头顶气泡";
                 };
             }
+        },
+        ESC_SKIPS_NODE(ConfigCategory.DIALOGUE, "ESC 跳过当前对白", "开启会推进到下一节点；关闭则直接退出。") {
+            @Override boolean value(PhantasmConfigScreen screen) { return screen.cinematicEscSkipsNode; }
+            @Override void toggle(PhantasmConfigScreen screen) { screen.cinematicEscSkipsNode = !screen.cinematicEscSkipsNode; }
+            @Override String valueLabel(PhantasmConfigScreen screen) { return value(screen) ? "跳过" : "退出"; }
         };
 
         private final ConfigCategory category;

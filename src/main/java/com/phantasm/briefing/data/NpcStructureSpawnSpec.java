@@ -1,15 +1,11 @@
 package com.phantasm.briefing.data;
 
-import com.google.gson.JsonElement;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.List;
-
-import static com.phantasm.briefing.data.JsonDataUtil.sanitize;
 
 public record NpcStructureSpawnSpec(
         String ruleId,
@@ -19,13 +15,11 @@ public record NpcStructureSpawnSpec(
         int offsetX,
         int offsetY,
         int offsetZ,
-        int spreadRadius,
         boolean snapToSurface,
         float yaw,
         boolean noAi,
         boolean nameVisible,
-        int villagerLevel,
-        List<JsonObject> conditions
+        int villagerLevel
 ) {
     public static NpcStructureSpawnSpec fromJson(
             @Nonnull String sourceDescription,
@@ -41,21 +35,24 @@ public record NpcStructureSpawnSpec(
         int offsetX = GsonHelper.getAsInt(json, "offsetX", 0);
         int offsetY = GsonHelper.getAsInt(json, "offsetY", 1);
         int offsetZ = GsonHelper.getAsInt(json, "offsetZ", 0);
+        if (json.has("offset") && json.get("offset").isJsonArray()) {
+            JsonArray offset = json.getAsJsonArray("offset");
+            if (offset.size() > 0) {
+                offsetX = offset.get(0).getAsInt();
+            }
+            if (offset.size() > 1) {
+                offsetY = offset.get(1).getAsInt();
+            }
+            if (offset.size() > 2) {
+                offsetZ = offset.get(2).getAsInt();
+            }
+        }
 
-        int spreadRadius = Math.max(0, Math.min(32, GsonHelper.getAsInt(json, "spreadRadius", 0)));
         boolean snapToSurface = GsonHelper.getAsBoolean(json, "snapToSurface", true);
         float yaw = GsonHelper.getAsFloat(json, "yaw", 0.0F);
         boolean noAi = GsonHelper.getAsBoolean(json, "noAi", false);
         boolean nameVisible = GsonHelper.getAsBoolean(json, "nameVisible", true);
         int villagerLevel = Math.max(1, Math.min(5, GsonHelper.getAsInt(json, "villagerLevel", 1)));
-        List<JsonObject> conditions = new ArrayList<>();
-        if (json.has("conditions") && json.get("conditions").isJsonArray()) {
-            for (JsonElement element : json.getAsJsonArray("conditions")) {
-                if (element.isJsonObject()) {
-                    conditions.add(element.getAsJsonObject().deepCopy());
-                }
-            }
-        }
 
         if (ruleId.isBlank()) {
             throw new IllegalArgumentException("NPC spawn ruleId is blank: " + sourceDescription);
@@ -78,13 +75,11 @@ public record NpcStructureSpawnSpec(
                 offsetX,
                 offsetY,
                 offsetZ,
-                spreadRadius,
                 snapToSurface,
                 yaw,
                 noAi,
                 nameVisible,
-                villagerLevel,
-                List.copyOf(conditions)
+                villagerLevel
         );
     }
 
@@ -106,5 +101,9 @@ public record NpcStructureSpawnSpec(
             return "";
         }
         return normalized.contains(":") ? normalized : defaultNamespace + ":" + normalized;
+    }
+
+    private static String sanitize(String value) {
+        return value == null ? "" : value.trim();
     }
 }

@@ -1,9 +1,11 @@
 package com.phantasm.briefing.network.packet;
 
-import com.phantasm.briefing.network.ClientPacketBridge;
+import com.phantasm.briefing.client.screen.QuestTreeScreen;
 import com.phantasm.briefing.data.QuestTreeEdgeEntry;
 import com.phantasm.briefing.data.QuestTreeEdgeType;
 import com.phantasm.briefing.data.QuestTreeNodeEntry;
+import com.phantasm.briefing.data.QuestTreeSnapshot;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
 
@@ -17,6 +19,7 @@ public record OpenQuestTreeS2CPacket(
     public static void encode(OpenQuestTreeS2CPacket packet, FriendlyByteBuf buffer) {
         buffer.writeCollection(packet.nodes(), (buf, node) -> {
             buf.writeUtf(node.questId());
+            buf.writeUtf(node.treeId());
             buf.writeUtf(node.title());
             buf.writeUtf(node.description());
             buf.writeEnum(node.status());
@@ -38,6 +41,7 @@ public record OpenQuestTreeS2CPacket(
                 buf.readUtf(),
                 buf.readUtf(),
                 buf.readUtf(),
+                buf.readUtf(),
                 buf.readEnum(com.phantasm.briefing.data.QuestRuntimeStatus.class),
                 buf.readInt(),
                 buf.readInt(),
@@ -55,7 +59,9 @@ public record OpenQuestTreeS2CPacket(
 
     public static void handle(OpenQuestTreeS2CPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
         NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> ClientPacketBridge.handle(packet));
+        context.enqueueWork(() -> Minecraft.getInstance().setScreen(new QuestTreeScreen(
+                new QuestTreeSnapshot(packet.nodes(), packet.edges())
+        )));
         context.setPacketHandled(true);
     }
 }

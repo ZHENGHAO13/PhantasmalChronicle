@@ -5,8 +5,6 @@ import net.minecraft.util.GsonHelper;
 
 import javax.annotation.Nonnull;
 
-import static com.phantasm.briefing.data.JsonDataUtil.sanitize;
-
 public record QuestTreeLayoutSpec(
         String treeId,
         int x,
@@ -20,5 +18,10 @@ public record QuestTreeLayoutSpec(
                 GsonHelper.getAsInt(json, "x", 0),
                 GsonHelper.getAsInt(json, "y", 0)
         );
+    }
+
+    @Nonnull
+    private static String sanitize(String value) {
+        return value == null ? "" : value.trim();
     }
 }

@@ -9,7 +9,6 @@ import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.math.Divisor;
 import com.phantasm.briefing.PhantasmBriefing;
-import com.phantasm.briefing.client.screen.DialogueChoiceScreen;
 import it.unimi.dsi.fastutil.ints.IntIterator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -55,9 +54,9 @@ public final class MaidWorldDialogueBubbleRenderer {
         if (!session.isActive()
                 || !DialogueFocusClient.usesMaidWorldBubble(session)
                 || minecraft.options.hideGui
-                || (minecraft.screen != null && !(minecraft.screen instanceof DialogueChoiceScreen))
+                || minecraft.screen != null
                 || speaker.getId() != session.getSpeakerEntityId()
-                || !DialogueFocusClient.canPresentActiveDialogue(minecraft, session)) {
+                || !DialogueFocusClient.isFocusedOnSpeaker(minecraft, session)) {
             return;
         }
 
@@ -84,37 +83,18 @@ public final class MaidWorldDialogueBubbleRenderer {
             LivingEntity speaker,
             int packedLight
     ) {
-        ContentTextureCache.TextureEntry dialogueImage = null;
-        int contentWidth;
-        int contentHeight;
-        List<FormattedCharSequence> lines;
-        if (session.isImageContent()) {
-            dialogueImage = ContentTextureCache.load(session.getCurrentImage()).texture();
-            if (dialogueImage != null) {
-                double scale = Math.min(1.0D, Math.min(MAX_TEXT_WIDTH / (double) dialogueImage.width(), 120.0D / dialogueImage.height()));
-                contentWidth = Math.max(1, (int) Math.round(dialogueImage.width() * scale));
-                contentHeight = Math.max(1, (int) Math.round(dialogueImage.height() * scale));
-            } else {
-                contentWidth = 120;
-                contentHeight = 68;
-            }
-            lines = List.of();
-        } else {
-            lines = font.split(Component.literal(session.getVisibleLine()), MAX_TEXT_WIDTH);
-            int textWidth = 0;
-            for (FormattedCharSequence line : lines) {
-                textWidth = Math.max(textWidth, font.width(line));
-            }
-            contentWidth = textWidth;
-            contentHeight = Math.max(font.lineHeight, lines.size() * font.lineHeight);
+        List<FormattedCharSequence> lines = font.split(Component.literal(session.getVisibleLine()), MAX_TEXT_WIDTH);
+        int textWidth = 0;
+        for (FormattedCharSequence line : lines) {
+            textWidth = Math.max(textWidth, font.width(line));
         }
-        int backgroundWidth = contentWidth + CONTENT_OFFSET * 2;
-        int backgroundHeight = contentHeight + CONTENT_OFFSET * 2;
+        int textHeight = lines.size() * font.lineHeight;
+        int backgroundWidth = textWidth + CONTENT_OFFSET * 2;
+        int backgroundHeight = textHeight + CONTENT_OFFSET * 2;
 
         poseStack.pushPose();
         poseStack.translate(0.0D, speaker.getNameTagOffsetY(), 0.0D);
         poseStack.mulPose(Minecraft.getInstance().getEntityRenderDispatcher().cameraOrientation());
-        poseStack.translate(0.0D, 0.0D, -0.15D);
         poseStack.scale(-WORLD_SCALE, -WORLD_SCALE, WORLD_SCALE);
 
         WorldBubbleGraphics graphics = new WorldBubbleGraphics(poseStack, packedLight);
@@ -138,27 +118,21 @@ public final class MaidWorldDialogueBubbleRenderer {
         graphics.blit(BUBBLE_TEXTURE, -8, -8, 32, 24, 16, 16);
         poseStack.translate(-backgroundWidth / 2.0D + CONTENT_OFFSET, -backgroundHeight + CONTENT_OFFSET, -0.01D);
 
-        if (dialogueImage != null) {
-            graphics.blit(dialogueImage.location(), 0, 0, contentWidth, contentHeight,
-                    0.0F, 0.0F, dialogueImage.width(), dialogueImage.height(),
-                    dialogueImage.width(), dialogueImage.height());
-        } else {
-            int y = 0;
-            for (FormattedCharSequence line : lines) {
-                font.drawInBatch(
-                        line,
-                        0,
-                        y,
-                        0x000000,
-                        false,
-                        poseStack.last().pose(),
-                        buffers,
-                        Font.DisplayMode.NORMAL,
-                        0,
-                        LightTexture.FULL_BRIGHT
-                );
-                y += font.lineHeight;
-            }
+        int y = 0;
+        for (FormattedCharSequence line : lines) {
+            font.drawInBatch(
+                    line,
+                    0,
+                    y,
+                    0x000000,
+                    false,
+                    poseStack.last().pose(),
+                    buffers,
+                    Font.DisplayMode.NORMAL,
+                    0,
+                    LightTexture.FULL_BRIGHT
+            );
+            y += font.lineHeight;
         }
         poseStack.popPose();
     }

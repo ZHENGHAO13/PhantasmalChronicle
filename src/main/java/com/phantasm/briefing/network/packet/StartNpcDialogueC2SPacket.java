@@ -47,21 +47,16 @@ public record StartNpcDialogueC2SPacket(int entityId) {
             }
 
             String questNodeId = QuestNpcHelper.resolveQuestNodeId(target);
-            String npcIdentity = QuestNpcHelper.getNpcIdentity(target);
+            if (NpcPrerequisiteDialogueService.openLockedNoticeIfNeeded(player, target)) {
+                return;
+            }
             ResourceLocation entityTypeKey = ForgeRegistries.ENTITY_TYPES.getKey(target.getType());
             QuestRuntimeService.onEntityInteracted(
                     player,
                     entityTypeKey == null ? "" : entityTypeKey.toString(),
-                    questNodeId,
-                    npcIdentity
+                    questNodeId
             );
-            if (questNodeId.isBlank()) {
-                return;
-            }
-            if (NpcPrerequisiteDialogueService.openLockedNoticeIfNeeded(player, target)) {
-                return;
-            }
-            DialogueFlowCoordinator.openBestNodeForPlayer(player, questNodeId, target);
+            DialogueFlowCoordinator.openNodeForPlayer(player, questNodeId, target);
         });
         context.setPacketHandled(true);
     }

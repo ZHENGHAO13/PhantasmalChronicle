@@ -6,11 +6,8 @@ public enum QuestObjectiveType {
     MANUAL,
     KILL,
     COLLECT,
-    CRAFT,
     INTERACT,
-    VISIT,
-    FTB_QUEST,
-    READ_MANUAL;
+    VISIT;
 
     public static QuestObjectiveType parse(String value) {
         String normalized = value == null ? "" : value.trim().replace('-', '_').toUpperCase(Locale.ROOT);
@@ -19,12 +16,9 @@ public enum QuestObjectiveType {
         }
         return switch (normalized) {
             case "KILL" -> KILL;
-            case "COLLECT" -> COLLECT;
-            case "CRAFT" -> CRAFT;
-            case "INTERACT" -> INTERACT;
-            case "VISIT" -> VISIT;
-            case "FTB_QUEST" -> FTB_QUEST;
-            case "READ_MANUAL" -> READ_MANUAL;
+            case "COLLECT", "HAS_ITEM", "HAS_ITEMS" -> COLLECT;
+            case "INTERACT", "TALK_TO", "TALK" -> INTERACT;
+            case "VISIT", "LOCATION", "GO_TO", "REACH" -> VISIT;
             default -> MANUAL;
         };
     }

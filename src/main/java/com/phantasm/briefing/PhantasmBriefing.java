@@ -13,12 +13,9 @@ import com.phantasm.briefing.event.QuestNpcCommandEvents;
 import com.phantasm.briefing.event.QuestNpcProtectionEvents;
 import com.phantasm.briefing.event.NpcStructureSpawnEvents;
 import com.phantasm.briefing.event.StructureSearchCompatEvents;
-import com.phantasm.briefing.event.EditorHotReloadEvents;
-import com.phantasm.briefing.integration.FTBIntegrationHelper;
 import com.phantasm.briefing.network.ModNetwork;
 import com.phantasm.briefing.registry.ModEntityTypes;
 import com.phantasm.briefing.registry.ModItems;
-import com.phantasm.briefing.service.QuestRuntimeService;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -37,7 +34,6 @@ public final class PhantasmBriefing {
     public PhantasmBriefing(FMLJavaModLoadingContext context) {
         IEventBus modEventBus = context.getModEventBus();
         ModNetwork.register();
-        FTBIntegrationHelper.registerQuestCompletionListener(QuestRuntimeService::onFtbQuestCompleted);
 
         ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, PhantasmBriefingClientConfig.SPEC, "phantasmbriefing-client.toml");
 
@@ -56,8 +52,6 @@ public final class PhantasmBriefing {
         MinecraftForge.EVENT_BUS.register(new QuestEntityHintEvents());
         MinecraftForge.EVENT_BUS.register(new QuestObjectiveProgressEvents());
         MinecraftForge.EVENT_BUS.register(new PlayerDataEvents());
-        MinecraftForge.EVENT_BUS.register(new EditorHotReloadEvents());
         MinecraftForge.EVENT_BUS.register(new StructureSearchCompatEvents());
     }
-
 }

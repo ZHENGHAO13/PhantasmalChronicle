@@ -1,0 +1,45 @@
+{
+  "questId": "arcadia_followup_quest",
+  "title": "后续委托",
+  "description": "这是一条用于演示 nextQuestIds 任务链追踪的后续任务。",
+  "objectiveLines": [
+    "在完成引导委托后接取后续委托。",
+    "继续与引导员交谈，确认新的委托安排。"
+  ],
+  "repeatable": false,
+  "requiredQuestId": "arcadia_demo_quest",
+  "initialPhaseId": "accepted",
+  "phases": [
+    {
+      "phaseId": "accepted",
+      "title": "确认后续安排",
+      "objectiveLines": [
+        "与引导员交谈，确认后续委托。"
+      ],
+      "targetNodeIds": [
+        "arcadia_demo_dialogue::root"
+      ],
+      "objectives": [
+        {
+          "objectiveId": "speak_with_guide_again",
+          "title": "再次交谈",
+          "objectiveLines": [
+            "与引导员再次交谈。"
+          ],
+          "targetNodeIds": [
+            "arcadia_demo_dialogue::root"
+          ],
+          "hintType": "available"
+        }
+      ],
+      "hintType": "available"
+    }
+  ],
+  "unlockConditions": [
+    {
+      "condition": "phantasmbriefing:quest_completed",
+      "questId": "arcadia_demo_quest"
+    }
+  ],
+  "trackerTitle": "接取后续委托"
+}

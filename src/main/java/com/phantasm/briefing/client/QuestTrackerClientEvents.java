@@ -1,15 +1,10 @@
 package com.phantasm.briefing.client;
 
-import com.phantasm.briefing.client.ui.DarkFantasyTheme;
-
 import com.phantasm.briefing.PhantasmBriefing;
 import com.phantasm.briefing.config.PhantasmBriefingClientConfig;
-import com.phantasm.briefing.data.QuestHintTarget;
 import com.phantasm.briefing.data.QuestHintType;
 import com.phantasm.briefing.data.QuestMarkerSpec;
 import com.phantasm.briefing.data.QuestTrackerEntry;
-import com.phantasm.briefing.data.QuestTrackerObjectiveEntry;
-import com.phantasm.briefing.data.QuestTrackerPhaseEntry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -44,17 +39,16 @@ public final class QuestTrackerClientEvents {
         if (minecraft.options.hideGui || minecraft.player == null || minecraft.screen != null) {
             return;
         }
-        GuiGraphics guiGraphics = event.getGuiGraphics();
-        if (QuestTrackerClientState.getManualReadPrompt() != null) {
-            renderManualReadPrompt(guiGraphics, minecraft, event.getWindow().getGuiScaledWidth());
-        }
         if (!PhantasmBriefingClientConfig.questTrackingEnabled()) {
             return;
         }
 
+        GuiGraphics guiGraphics = event.getGuiGraphics();
         QuestTrackerEntry trackedEntry = QuestTrackerClientState.getTrackedEntry();
         if (QuestTrackerClientState.isTrackerHudEnabled() && trackedEntry != null) {
-            renderTrackerPanel(guiGraphics, minecraft, trackedEntry, event.getWindow().getGuiScaledWidth());
+            if (PhantasmBriefingClientConfig.questTrackerPanelEnabled()) {
+                renderTrackerPanel(guiGraphics, minecraft, trackedEntry, event.getWindow().getGuiScaledWidth());
+            }
             if (PhantasmBriefingClientConfig.worldMarkerEnabled()) {
                 renderMarker(guiGraphics, minecraft, trackedEntry.marker(), event.getWindow().getGuiScaledWidth(), event.getWindow().getGuiScaledHeight());
             }
@@ -67,7 +61,6 @@ public final class QuestTrackerClientEvents {
 
     @SubscribeEvent
     public static void onClientLogout(ClientPlayerNetworkEvent.LoggingOut event) {
-        ContentTextureCache.clear();
         QuestTrackerClientState.clear();
     }
 
@@ -78,188 +71,43 @@ public final class QuestTrackerClientEvents {
             int screenWidth
     ) {
         Font font = minecraft.font;
-        int top = 8;
-        int width = 150;
-        int horizontalPadding = 6;
-        int contentWidth = width - (horizontalPadding * 2);
-        int left = PhantasmBriefingClientConfig.questTrackerAnchorRight() ? screenWidth - width - 8 : 8;
-        boolean showTrackingText = PhantasmBriefingClientConfig.questTrackerShowObjectiveTrackingText();
-        List<TrackerRenderLine> lines = new ArrayList<>();
-
-        addTrackerLines(
-                lines,
-                font,
-                Component.literal(trackedEntry.title()),
-                contentWidth,
-                DarkFantasyTheme.TEXT_TITLE,
-                0,
-                0
-        );
-
-        boolean hasObjectives = false;
-        for (QuestTrackerPhaseEntry phase : trackedEntry.phases()) {
-            if (!phase.objectives().isEmpty()) {
-                hasObjectives = true;
-            }
-            addTrackerLines(
-                    lines,
-                    font,
-                    Component.literal(phase.title()),
-                    contentWidth,
-                    DarkFantasyTheme.TEXT_PRIMARY,
-                    0,
-                    1
-            );
-
-            for (QuestTrackerObjectiveEntry objective : phase.objectives()) {
-                int objectiveColor = objective.completed()
-                        ? DarkFantasyTheme.TEXT_COMPLETED
-                        : objective.active() ? DarkFantasyTheme.TEXT_SECONDARY : DarkFantasyTheme.TEXT_MUTED;
-                addObjectiveTrackerLines(
-                        lines,
-                        font,
-                        objective.completed() ? "✓" : "○",
-                        objective.title(),
-                        contentWidth,
-                        objectiveColor,
-                        0
-                );
-
-                if (!showTrackingText) {
-                    continue;
-                }
-                int trackingColor = objective.active()
-                        ? DarkFantasyTheme.TEXT_MUTED
-                        : objectiveColor;
-                for (String objectiveTrackingLine : objective.trackingLines()) {
-                    addTrackerLines(
-                            lines,
-                            font,
-                            Component.literal(objectiveTrackingLine),
-                            contentWidth,
-                            trackingColor,
-                            8,
-                            0
-                    );
-                }
-                if (!objective.waitingStructureLabel().isBlank()) {
-                    addTrackerLines(
-                            lines,
-                            font,
-                            Component.translatable(
-                                    "hud.phantasmbriefing.waiting_structure",
-                                    objective.waitingStructureLabel()
-                            ),
-                            contentWidth,
-                            trackingColor,
-                            8,
-                            0
-                    );
-                }
+        int top = 10;
+        int width = 170;
+        int left = PhantasmBriefingClientConfig.questTrackerAnchorRight() ? screenWidth - width - 10 : 10;
+        int contentWidth = width - 16;
+        String trackerTitle = trackedEntry.title();
+        List<FormattedCharSequence> titleLines = font.split(Component.literal(trackerTitle), contentWidth);
+        List<FormattedCharSequence> objectiveLines = new ArrayList<>();
+        if (trackedEntry.objectiveLines().isEmpty()) {
+            objectiveLines.addAll(font.split(Component.literal("暂无任务目标。"), contentWidth));
+        } else {
+            int objectiveCount = PhantasmBriefingClientConfig.questTrackerShowAllObjectives()
+                    ? trackedEntry.objectiveLines().size()
+                    : 1;
+            for (int i = 0; i < objectiveCount; i++) {
+                String prefix = objectiveCount > 1 ? "• " : "";
+                objectiveLines.addAll(font.split(Component.literal(prefix + trackedEntry.objectiveLines().get(i)), contentWidth));
             }
         }
-
-        if (!hasObjectives) {
-            addTrackerLines(
-                    lines,
-                    font,
-                    Component.translatable("hud.phantasmbriefing.no_objectives"),
-                    contentWidth,
-                    DarkFantasyTheme.TEXT_MUTED,
-                    0,
-                    2
-            );
-        }
-
         int lineHeight = font.lineHeight;
-        int height = 4 + lines.stream().mapToInt(line -> lineHeight + line.gapBefore()).sum() + 4;
-        guiGraphics.fill(left, top, left + width, top + height, DarkFantasyTheme.TRACKER_BACKGROUND);
-        guiGraphics.fill(left, top, left + width, top + 1, DarkFantasyTheme.TRACKER_TOP_EDGE);
-        guiGraphics.fill(left, top, left + 1, top + height, DarkFantasyTheme.TRACKER_ACCENT);
-
-        int lineY = top + 4;
-        for (TrackerRenderLine line : lines) {
-            lineY += line.gapBefore();
-            int lineX = left + horizontalPadding + line.indent();
-            if (!line.prefix().isEmpty()) {
-                guiGraphics.drawString(font, line.prefix(), lineX, lineY, line.color(), true);
-            }
-            guiGraphics.drawString(
-                    font,
-                    line.text(),
-                    lineX + line.textOffset(),
-                    lineY,
-                    line.color(),
-                    true
-            );
+        int height = 8
+                + (titleLines.size() * lineHeight)
+                + 4
+                + (objectiveLines.size() * lineHeight)
+                + 8;
+        guiGraphics.fill(left, top, left + width, top + height, 0xB012171F);
+        guiGraphics.fill(left, top, left + width, top + 1, 0x6634465C);
+        guiGraphics.fill(left, top, left + 2, top + height, 0x8A4D7CA9);
+        int lineY = top + 7;
+        for (FormattedCharSequence titleLine : titleLines) {
+            guiGraphics.drawString(font, titleLine, left + 8, lineY, 0xDCECFF, true);
             lineY += lineHeight;
         }
-    }
-
-    private static void addTrackerLines(
-            List<TrackerRenderLine> target,
-            Font font,
-            Component text,
-            int contentWidth,
-            int color,
-            int indent,
-            int gapBefore
-    ) {
-        int wrappedWidth = Math.max(24, contentWidth - indent);
-        List<FormattedCharSequence> wrapped = font.split(text, wrappedWidth);
-        if (wrapped.isEmpty()) {
-            return;
+        lineY += 4;
+        for (FormattedCharSequence objectiveLine : objectiveLines) {
+            guiGraphics.drawString(font, objectiveLine, left + 8, lineY, 0x9FB4D1, true);
+            lineY += lineHeight;
         }
-        for (int index = 0; index < wrapped.size(); index++) {
-            target.add(new TrackerRenderLine(
-                    wrapped.get(index),
-                    "",
-                    color,
-                    indent,
-                    0,
-                    index == 0 ? gapBefore : 0
-            ));
-        }
-    }
-
-    private static void addObjectiveTrackerLines(
-            List<TrackerRenderLine> target,
-            Font font,
-            String prefix,
-            String title,
-            int contentWidth,
-            int color,
-            int gapBefore
-    ) {
-        String renderedPrefix = prefix + " ";
-        int prefixWidth = font.width(renderedPrefix);
-        int wrappedWidth = Math.max(24, contentWidth - prefixWidth);
-        List<FormattedCharSequence> wrapped = font.split(Component.literal(title), wrappedWidth);
-        if (wrapped.isEmpty()) {
-            return;
-        }
-        for (int index = 0; index < wrapped.size(); index++) {
-            boolean firstLine = index == 0;
-            target.add(new TrackerRenderLine(
-                    wrapped.get(index),
-                    firstLine ? renderedPrefix : "",
-                    color,
-                    firstLine ? 0 : prefixWidth,
-                    firstLine ? prefixWidth : 0,
-                    firstLine ? gapBefore : 0
-            ));
-        }
-    }
-
-    private static void renderManualReadPrompt(GuiGraphics guiGraphics, Minecraft minecraft, int screenWidth) {
-        Component prompt = Component.translatable("hud.phantasmbriefing.manual_read_prompt");
-        int width = Math.min(screenWidth - 16, minecraft.font.width(prompt) + 20);
-        int left = (screenWidth - width) / 2;
-        int top = 6;
-        guiGraphics.fill(left, top, left + width, top + 20, DarkFantasyTheme.PROMPT_BACKGROUND);
-        guiGraphics.fill(left, top, left + width, top + 1, DarkFantasyTheme.GOLD);
-        guiGraphics.fill(left, top + 19, left + width, top + 20, DarkFantasyTheme.BRASS_DIM);
-        guiGraphics.drawCenteredString(minecraft.font, prompt, screenWidth / 2, top + 6, DarkFantasyTheme.TEXT_PRIMARY);
     }
 
     private static void renderMarker(
@@ -277,8 +125,7 @@ public final class QuestTrackerClientEvents {
         Font font = minecraft.font;
         ResourceLocation playerDimension = level.dimension().location();
         if (!playerDimension.toString().equals(marker.dimension())) {
-            guiGraphics.drawString(font, Component.translatable("hud.phantasmbriefing.marker_other_dimension", marker.label()),
-                    screenWidth / 2 - 70, manualReadHudOffset() + 12, DarkFantasyTheme.GOLD, true);
+            guiGraphics.drawString(font, "目标位于其他维度: " + marker.label(), screenWidth / 2 - 70, 12, 0xE2C27A, true);
             return;
         }
 
@@ -289,21 +136,19 @@ public final class QuestTrackerClientEvents {
         float yawDelta = Mth.wrapDegrees(targetYaw - player.getYRot());
         int centerX = screenWidth / 2;
         int markerX = centerX + Mth.clamp((int) (yawDelta * 2.0F), -120, 120);
-        int markerY = manualReadHudOffset() + 12;
+        int markerY = 12;
 
-        guiGraphics.fill(markerX - 2, markerY, markerX + 2, markerY + 8, DarkFantasyTheme.WORLD_MARKER);
-        Component markerText = marker.label().isBlank()
-                ? Component.translatable("hud.phantasmbriefing.marker_default")
-                : Component.literal(marker.label());
+        guiGraphics.fill(markerX - 2, markerY, markerX + 2, markerY + 8, 0xCC6FB9FF);
+        String markerText = marker.label().isBlank() ? "任务目标" : marker.label();
         if (PhantasmBriefingClientConfig.markerDistanceEnabled()) {
-            markerText = markerText.copy().append(Component.literal(" " + String.format("%.0fm", distance)));
+            markerText += " " + String.format("%.0fm", distance);
         }
         guiGraphics.drawString(
                 font,
                 markerText,
                 markerX - 28,
                 markerY + 10,
-                DarkFantasyTheme.TEXT_SECONDARY,
+                0xDCECFF,
                 true
         );
     }
@@ -316,58 +161,49 @@ public final class QuestTrackerClientEvents {
         LocalPlayer player = minecraft.player;
         ClientLevel level = minecraft.level;
         Font font = minecraft.font;
+        Entity entity = level.getEntity(QuestTrackerClientState.getHintEntityId());
+        QuestHintType hintType = QuestTrackerClientState.getHintType();
+        if (entity == null || !entity.isAlive() || hintType == QuestHintType.NONE) {
+            return;
+        }
+        double dx = entity.getX() - player.getX();
+        double dz = entity.getZ() - player.getZ();
+        double distance = Math.sqrt((dx * dx) + (dz * dz));
+        float targetYaw = (float) (Math.toDegrees(Math.atan2(dz, dx)) - 90.0D);
+        float yawDelta = Mth.wrapDegrees(targetYaw - player.getYRot());
+
         int centerX = screenWidth / 2;
-        List<HintRenderTarget> renderTargets = new ArrayList<>();
-        for (QuestHintTarget target : QuestTrackerClientState.getHintTargets()) {
-            Entity entity = level.getEntity(target.entityId());
-            if (entity == null || !entity.isAlive() || target.type() == QuestHintType.NONE) {
-                continue;
-            }
-            double dx = entity.getX() - player.getX();
-            double dz = entity.getZ() - player.getZ();
-            double distance = Math.sqrt((dx * dx) + (dz * dz));
-            float targetYaw = (float) (Math.toDegrees(Math.atan2(dz, dx)) - 90.0D);
-            float yawDelta = Mth.wrapDegrees(targetYaw - player.getYRot());
-            int iconX = centerX + Mth.clamp((int) (yawDelta * 2.4F), -150, 150);
-            renderTargets.add(new HintRenderTarget(target.entityId(), target.type(), iconX, distance));
-        }
-        renderTargets.sort((left, right) -> {
-            int byX = Integer.compare(left.x(), right.x());
-            return byX != 0 ? byX : Integer.compare(left.entityId(), right.entityId());
-        });
+        int iconX = centerX + Mth.clamp((int) (yawDelta * 2.4F), -150, 150);
+        int iconY = 36;
+        int accentColor = switch (hintType) {
+            case AVAILABLE -> 0xFFF4C24E;
+            case ADVANCE -> 0xFF7FD6FF;
+            case COMPLETE -> 0xFF8FF59A;
+            case NONE -> 0xFFF4C24E;
+        };
+        String label = switch (hintType) {
+            case AVAILABLE -> "可接";
+            case ADVANCE -> "推进";
+            case COMPLETE -> "可交";
+            case NONE -> "";
+        };
+        int shadowColor = 0x66000000;
+        int textColor = (accentColor & 0x00FFFFFF) | 0xEE000000;
+        int highlightColor = brighten(accentColor, 28);
+        int iconTop = iconY - 2;
 
-        List<PlacedHint> placed = new ArrayList<>();
-        for (HintRenderTarget target : renderTargets) {
-            int iconY = manualReadHudOffset() + 34;
-            while (overlapsPlacedHint(placed, target.x(), iconY)) {
-                iconY += 28;
-            }
-            int accentColor = switch (target.type()) {
-                case AVAILABLE -> DarkFantasyTheme.STATUS_AVAILABLE;
-                case ADVANCE -> DarkFantasyTheme.STATUS_ACTIVE;
-                case COMPLETE -> DarkFantasyTheme.STATUS_READY;
-                case NONE -> DarkFantasyTheme.STATUS_AVAILABLE;
-            };
-            int highlightColor = brighten(accentColor, 28);
-            renderHintIcon(guiGraphics, target.type(), target.x(), iconY, accentColor, highlightColor, 0x66000000);
-            if (PhantasmBriefingClientConfig.markerDistanceEnabled()) {
-                Component distanceText = Component.translatable(
-                        "hud.phantasmbriefing.npc_distance",
-                        String.format(java.util.Locale.ROOT, "%.0f", target.distance())
-                );
-                guiGraphics.drawCenteredString(font, distanceText, target.x(), iconY + 16, (accentColor & 0x00FFFFFF) | 0xEE000000);
-            }
-            placed.add(new PlacedHint(target.x(), iconY));
-        }
-    }
-
-    private static boolean overlapsPlacedHint(List<PlacedHint> placed, int x, int y) {
-        for (PlacedHint existing : placed) {
-            if (Math.abs(existing.x() - x) < 28 && Math.abs(existing.y() - y) < 28) {
-                return true;
-            }
-        }
-        return false;
+        renderHintIcon(guiGraphics, hintType, iconX, iconTop, accentColor, highlightColor, shadowColor);
+        guiGraphics.fill(iconX - 7, iconY + 11, iconX + 7, iconY + 12, (accentColor & 0x00FFFFFF) | 0x66000000);
+        String indicatorText = PhantasmBriefingClientConfig.markerDistanceEnabled()
+                ? label + " " + String.format("%.0fm", distance)
+                : label;
+        guiGraphics.drawCenteredString(
+                font,
+                indicatorText,
+                iconX,
+                iconY + 12,
+                textColor
+        );
     }
 
     private static void renderHintIcon(
@@ -445,24 +281,4 @@ public final class QuestTrackerClientEvents {
         int blue = Math.min(255, (color & 0xFF) + amount);
         return (alpha << 24) | (red << 16) | (green << 8) | blue;
     }
-
-    private static int manualReadHudOffset() {
-        return QuestTrackerClientState.getManualReadPrompt() == null ? 0 : 24;
-    }
-    private record HintRenderTarget(int entityId, QuestHintType type, int x, double distance) {
-    }
-
-    private record PlacedHint(int x, int y) {
-    }
-
-    private record TrackerRenderLine(
-            FormattedCharSequence text,
-            String prefix,
-            int color,
-            int indent,
-            int textOffset,
-            int gapBefore
-    ) {
-    }
-
 }

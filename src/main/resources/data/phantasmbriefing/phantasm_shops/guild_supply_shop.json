@@ -1,0 +1,34 @@
+{
+  "shopId": "guild_supply_shop",
+  "title": "公会补给",
+  "offers": [
+    {
+      "costA": {
+        "item": "minecraft:emerald",
+        "count": 2
+      },
+      "result": {
+        "item": "minecraft:bread",
+        "count": 4
+      },
+      "maxUses": 9999,
+      "villagerXp": 0,
+      "priceMultiplier": 0.0
+    },
+    {
+      "costA": {
+        "item": "minecraft:emerald",
+        "count": 6
+      },
+      "result": {
+        "item": "minecraft:iron_sword",
+        "count": 1
+      },
+      "requiredQuestId": "1B766784FBBE7D51",
+      "hideUntilUnlocked": false,
+      "maxUses": 9999,
+      "villagerXp": 0,
+      "priceMultiplier": 0.0
+    }
+  ]
+}

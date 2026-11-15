@@ -1,19 +1,15 @@
 package com.phantasm.briefing.client;
 
-import com.phantasm.briefing.data.QuestHintTarget;
+import com.phantasm.briefing.data.QuestHintType;
 import com.phantasm.briefing.data.QuestTrackerEntry;
-import com.phantasm.briefing.data.ManualReadPromptState;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.List;
 
 public final class QuestTrackerClientState {
     @Nullable
     private static QuestTrackerEntry trackedEntry;
     private static boolean trackerHudEnabled = true;
-    private static List<QuestHintTarget> hintTargets = List.of();
-    @Nullable
-    private static ManualReadPromptState manualReadPrompt;
+    private static int hintEntityId = -1;
+    private static QuestHintType hintType = QuestHintType.NONE;
 
     private QuestTrackerClientState() {
     }
@@ -35,27 +31,27 @@ public final class QuestTrackerClientState {
         trackerHudEnabled = enabled;
     }
 
-    public static List<QuestHintTarget> getHintTargets() {
-        return hintTargets;
+    public static int getHintEntityId() {
+        return hintEntityId;
     }
 
-    public static void setHints(List<QuestHintTarget> targets) {
-        hintTargets = targets == null ? List.of() : List.copyOf(targets);
+    public static void setHintEntityId(int entityId) {
+        hintEntityId = entityId;
     }
 
-    @Nullable
-    public static ManualReadPromptState getManualReadPrompt() {
-        return manualReadPrompt;
+    public static QuestHintType getHintType() {
+        return hintType;
     }
 
-    public static void setManualReadPrompt(@Nullable ManualReadPromptState prompt) {
-        manualReadPrompt = prompt;
+    public static void setHint(int entityId, QuestHintType type) {
+        hintEntityId = entityId;
+        hintType = type == null ? QuestHintType.NONE : type;
     }
 
     public static void clear() {
         trackedEntry = null;
         trackerHudEnabled = true;
-        hintTargets = List.of();
-        manualReadPrompt = null;
+        hintEntityId = -1;
+        hintType = QuestHintType.NONE;
     }
 }

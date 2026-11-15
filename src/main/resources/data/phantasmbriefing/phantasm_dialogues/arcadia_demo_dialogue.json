@@ -1,0 +1,242 @@
+{
+  "id": "arcadia_demo_dialogue",
+  "defaultNpc": {
+    "mode": "literal",
+    "value": "引导员"
+  },
+  "startNodeId": "root",
+  "nodes": [
+    {
+      "nodeId": "root",
+      "presentation": "briefing",
+      "text": {
+        "mode": "literal",
+        "value": "测试文本"
+      },
+      "choices": [
+        {
+          "choiceId": "accept_quest",
+          "text": {
+            "mode": "literal",
+            "value": "接受引导委托"
+          },
+          "conditions": [
+            {
+              "condition": "phantasmbriefing:quest_not_started",
+              "questId": "arcadia_demo_quest"
+            }
+          ],
+          "actions": [
+            {
+              "type": "start_quest",
+              "questId": "arcadia_demo_quest"
+            }
+          ],
+          "nextNodeId": "memory_echo"
+        },
+        {
+          "choiceId": "continue_memory_echo",
+          "text": {
+            "mode": "literal",
+            "value": "继续前往记忆回响"
+          },
+          "conditions": [
+            {
+              "condition": "phantasmbriefing:quest_phase",
+              "questId": "arcadia_demo_quest",
+              "phaseId": "accepted"
+            },
+            {
+              "condition": "phantasmbriefing:not",
+              "inner": {
+                "condition": "phantasmbriefing:quest_objective_completed",
+                "questId": "arcadia_demo_quest",
+                "objectiveId": "experience_memory_echo"
+              }
+            }
+          ],
+          "nextNodeId": "memory_echo"
+        },
+        {
+          "choiceId": "confirm_memory_trace",
+          "text": {
+            "mode": "literal",
+            "value": "确认回响已经稳定"
+          },
+          "conditions": [
+            {
+              "condition": "phantasmbriefing:quest_phase",
+              "questId": "arcadia_demo_quest",
+              "phaseId": "accepted"
+            },
+            {
+              "condition": "phantasmbriefing:quest_objective_completed",
+              "questId": "arcadia_demo_quest",
+              "objectiveId": "experience_memory_echo"
+            },
+            {
+              "condition": "phantasmbriefing:not",
+              "inner": {
+                "condition": "phantasmbriefing:quest_objective_completed",
+                "questId": "arcadia_demo_quest",
+                "objectiveId": "confirm_memory_trace"
+              }
+            }
+          ],
+          "actions": [
+            {
+              "type": "complete_objective",
+              "questId": "arcadia_demo_quest",
+              "objectiveId": "confirm_memory_trace"
+            },
+            {
+              "type": "close"
+            }
+          ]
+        },
+        {
+          "choiceId": "turn_in_quest",
+          "text": {
+            "mode": "literal",
+            "value": "汇报回响结果"
+          },
+          "conditions": [
+            {
+              "condition": "phantasmbriefing:quest_ready_to_turn_in",
+              "questId": "arcadia_demo_quest"
+            }
+          ],
+          "actions": [
+            {
+              "type": "complete_objective",
+              "questId": "arcadia_demo_quest",
+              "objectiveId": "turn_in_to_guide"
+            },
+            {
+              "type": "close"
+            }
+          ]
+        },
+        {
+          "choiceId": "quest_completed_remark",
+          "text": {
+            "mode": "literal",
+            "value": "委托已经整理完成"
+          },
+          "conditions": [
+            {
+              "condition": "phantasmbriefing:quest_completed",
+              "questId": "arcadia_demo_quest"
+            },
+            {
+              "condition": "phantasmbriefing:has_flag",
+              "flag": "arcadia_demo_finished"
+            }
+          ],
+          "actions": [
+            {
+              "type": "close"
+            }
+          ]
+        },
+        {
+          "choiceId": "accept_followup_quest",
+          "text": {
+            "mode": "literal",
+            "value": "接受后续委托"
+          },
+          "conditions": [
+            {
+              "condition": "phantasmbriefing:quest_completed",
+              "questId": "arcadia_demo_quest"
+            },
+            {
+              "condition": "phantasmbriefing:quest_not_started",
+              "questId": "arcadia_followup_quest"
+            }
+          ],
+          "actions": [
+            {
+              "type": "start_quest",
+              "questId": "arcadia_followup_quest"
+            },
+            {
+              "type": "close"
+            }
+          ]
+        },
+        {
+          "choiceId": "leave",
+          "text": {
+            "mode": "literal",
+            "value": "先记下这些内容"
+          },
+          "actions": [
+            {
+              "type": "close"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "nodeId": "memory_echo",
+      "presentation": "cinematic",
+      "text": {
+        "mode": "literal",
+        "value": "测试文本"
+      },
+      "triggerVFX": true,
+      "conditions": [
+        {
+          "condition": "phantasmbriefing:and",
+          "conditions": [
+            {
+              "condition": "phantasmbriefing:quest_accepted",
+              "questId": "arcadia_demo_quest"
+            },
+            {
+              "condition": "phantasmbriefing:has_flag",
+              "flag": "arcadia_demo_accepted"
+            },
+            {
+              "condition": "phantasmbriefing:has_flag",
+              "flag": "arcadia_demo_accept_actions_ran"
+            }
+          ]
+        }
+      ],
+      "choices": [
+        {
+          "choiceId": "mark_memory_complete",
+          "text": {
+            "mode": "literal",
+            "value": "记录回响结果"
+          },
+          "actions": [
+            {
+              "type": "complete_objective",
+              "questId": "arcadia_demo_quest",
+              "objectiveId": "experience_memory_echo"
+            },
+            {
+              "type": "close"
+            }
+          ]
+        },
+        {
+          "choiceId": "close",
+          "text": {
+            "mode": "literal",
+            "value": "结束回响"
+          },
+          "actions": [
+            {
+              "type": "close"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

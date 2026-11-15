@@ -1,0 +1,33 @@
+{
+  "nodeId": "arcadia_memory_echo",
+  "title": "记忆回响",
+  "presentation": "cinematic",
+  "lines": [
+    "测试文本",
+    "测试文本"
+  ],
+  "triggerVFX": true,
+  "ftbQuestIdToComplete": "",
+  "nextNodeId": "",
+  "options": [
+    {
+      "optionId": "open_reserved_shop",
+      "label": "打开预留商店",
+      "actions": [
+        {
+          "type": "open_shop",
+          "targetId": "guild_supply_shop"
+        }
+      ]
+    },
+    {
+      "optionId": "close_memory_echo",
+      "label": "结束回响",
+      "actions": [
+        {
+          "type": "close_dialogue"
+        }
+      ]
+    }
+  ]
+}

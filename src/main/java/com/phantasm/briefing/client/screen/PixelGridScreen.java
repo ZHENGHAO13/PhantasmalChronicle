@@ -2,6 +2,7 @@ package com.phantasm.briefing.client.screen;
 
 import com.phantasm.briefing.client.ui.PixelRenderUtil;
 import com.phantasm.briefing.client.widgets.PixelWidget;
+import com.phantasm.briefing.client.widgets.TickablePixelWidget;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -22,6 +23,16 @@ public abstract class PixelGridScreen extends Screen {
         super.init();
         this.widgets.clear();
         this.buildWidgets();
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        for (PixelWidget widget : this.widgets) {
+            if (widget instanceof TickablePixelWidget tickableWidget) {
+                tickableWidget.tick();
+            }
+        }
     }
 
     protected abstract void buildWidgets();

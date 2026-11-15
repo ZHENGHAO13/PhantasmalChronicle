@@ -50,65 +50,10 @@ public final class NpcStructureSpawnSavedData extends SavedData {
         return this.spawnedInstances.contains(instanceId);
     }
 
-    public Set<String> getSpawnedInstances() {
-        return Set.copyOf(this.spawnedInstances);
-    }
-
     public void markSpawned(String instanceId) {
         if (instanceId != null && !instanceId.isBlank() && this.spawnedInstances.add(instanceId)) {
             this.setDirty();
         }
-    }
-
-
-    public boolean removeSpawned(String instanceId) {
-        if (instanceId == null || instanceId.isBlank()) {
-            return false;
-        }
-        boolean changed = this.spawnedInstances.remove(instanceId);
-        if (changed) {
-            this.setDirty();
-        }
-        return changed;
-    }
-
-    public int removeSpawnedInstancesForBinding(String bindingId) {
-        if (bindingId == null || bindingId.isBlank()) {
-            return 0;
-        }
-        String marker = "|" + bindingId.trim() + "|";
-        int before = this.spawnedInstances.size();
-        this.spawnedInstances.removeIf(id -> id.contains(marker));
-        int removed = before - this.spawnedInstances.size();
-        if (removed > 0) {
-            this.setDirty();
-        }
-        return removed;
-    }
-
-    public int removeCompletedStructuresForBinding(String bindingId) {
-        if (bindingId == null || bindingId.isBlank()) {
-            return 0;
-        }
-        String marker = bindingId.trim() + "/";
-        int before = this.completedStructures.size();
-        this.completedStructures.removeIf(id -> id.contains(marker));
-        int removed = before - this.completedStructures.size();
-        if (removed > 0) {
-            this.setDirty();
-        }
-        return removed;
-    }
-
-    public boolean removeCompletedStructure(String structureId) {
-        if (structureId == null || structureId.isBlank()) {
-            return false;
-        }
-        boolean changed = this.completedStructures.remove(structureId);
-        if (changed) {
-            this.setDirty();
-        }
-        return changed;
     }
 
     public boolean hasCompletedStructure(String structureId) {
